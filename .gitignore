@@ -1,0 +1,9 @@
+node_modules/
+dist/
+.env
+.env.local
+server/data/transcripts/
+server/data/arena/
+server/data/scoreboard.json
+*.log
+.DS_Store

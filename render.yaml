@@ -1,0 +1,19 @@
+# Deploy target: a single Node service. No container, no Playwright, no browser
+# on the server -- which is why this file is four lines of interest long.
+#
+#   Render:   New > Blueprint > point at this repo
+#   Railway:  build `npm install && npm run build`, start `npm start`
+#   Fly.io:   `fly launch --no-deploy` then `fly deploy` (same two commands)
+services:
+  - type: web
+    name: tracer
+    runtime: node
+    plan: free
+    buildCommand: npm install && npm run build
+    startCommand: npm start
+    healthCheckPath: /api/health
+    envVars:
+      - key: NODE_VERSION
+        value: '22'
+      - key: MODEL_PROVIDER
+        value: simulated

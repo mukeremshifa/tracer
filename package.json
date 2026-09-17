@@ -1,0 +1,23 @@
+{
+  "name": "tracer",
+  "private": true,
+  "version": "1.0.0",
+  "description": "Tracer - a provenance firewall for AI agents.",
+  "type": "module",
+  "workspaces": ["server", "web"],
+  "engines": { "node": ">=20" },
+  "scripts": {
+    "dev": "concurrently -n api,web -c cyan,magenta \"npm -w server run dev\" \"npm -w web run dev\"",
+    "build": "npm run range && npm -w web run build",
+    "start": "node server/src/index.js",
+    "range": "node scripts/build-range.mjs",
+    "demo": "node scripts/build-demo.mjs",
+    "eval": "node scripts/eval.mjs",
+    "verify": "node scripts/verify.mjs",
+    "postinstall": "node scripts/check-env.mjs"
+  },
+  "devDependencies": {
+    "concurrently": "^9.1.0",
+    "jsdom": "^25.0.1"
+  }
+}

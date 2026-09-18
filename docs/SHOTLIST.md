@@ -5,9 +5,14 @@ before you hit record. Timings for the software beats are measured, not guessed:
 they come from the beat table in `web/src/lib/player.js` and the event counts in
 the transcripts named below.
 
-**Narration is AI voiceover.** That means the script is the cheap part and the
-footage is the expensive part. Capture footage first, write to what you actually
-got, generate audio last, cut picture to audio.
+**Narration is AI voiceover, and most of the picture is rendered rather than
+recorded.** `media/` holds finished 1920x1080 MP4s built by
+`node scripts/render-clips.mjs` from the same data the site serves, so a number
+that moves is one command away from correct footage instead of a reshoot. Only
+two beats are captured live -- the X-ray reveal and the proxy terminal -- because
+those are the ones where software responding to a person is the point.
+
+See `docs/EDIT.md` for the CapCut assembly order.
 
 ---
 

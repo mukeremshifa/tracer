@@ -1,0 +1,25 @@
+<!doctype html><html><head><meta charset="utf-8"><link rel="stylesheet" href="_base.css"></head>
+<body>
+<div class="bar"></div>
+<div class="stage">
+  <div class="kicker" id="k">It already happened</div>
+  <div class="mid" id="t">A single email took data out of <em>Microsoft 365 Copilot.</em></div>
+  <div class="row" style="margin-top:56px">
+    <div class="stat" id="s1"><div class="n" id="n1">0.0</div><div class="l">CVSS — CVE-2025-32711</div></div>
+    <div class="stat" id="s2"><div class="n" id="n2">0</div><div class="l">clicks required</div></div>
+  </div>
+  <div class="say" id="y">The instructions were hidden in white-on-white text and HTML comments.</div>
+</div>
+<div class="cite" id="c">EchoLeak, CVE-2025-32711 · disclosed by Aim Security · arXiv:2509.10540<br>
+  Patched server-side by Microsoft; no exploitation in the wild reported.</div>
+<script type="module">
+import { seg, enter, countTo } from './_frame.js';
+enter(document.getElementById('k'), seg(0.00, 0.12));
+enter(document.getElementById('t'), seg(0.05, 0.28));
+enter(document.getElementById('s1'), seg(0.24, 0.40));
+enter(document.getElementById('s2'), seg(0.32, 0.48));
+document.getElementById('n1').textContent = countTo(9.3, seg(0.24, 0.52), 1);
+document.getElementById('n2').textContent = '0';
+enter(document.getElementById('y'), seg(0.48, 0.68));
+enter(document.getElementById('c'), seg(0.60, 0.80));
+</script></body></html>

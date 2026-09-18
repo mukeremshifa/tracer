@@ -1,0 +1,42 @@
+[
+  {
+    "id": "robbery",
+    "page": "robbery.html",
+    "frames": 300
+  },
+  {
+    "id": "block",
+    "page": "block.html",
+    "frames": 300
+  },
+  {
+    "id": "stats-01-owasp",
+    "page": "stats-01.html",
+    "frames": 165
+  },
+  {
+    "id": "stats-02-echoleak",
+    "page": "stats-02.html",
+    "frames": 225
+  },
+  {
+    "id": "stats-03-defences",
+    "page": "stats-03.html",
+    "frames": 240
+  },
+  {
+    "id": "stats-04-gap",
+    "page": "stats-04.html",
+    "frames": 210
+  },
+  {
+    "id": "honesty",
+    "page": "honesty.html",
+    "frames": 240
+  },
+  {
+    "id": "closing",
+    "page": "closing.html",
+    "frames": 240
+  }
+]

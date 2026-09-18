@@ -1,0 +1,26 @@
+<!doctype html><html><head><meta charset="utf-8"><link rel="stylesheet" href="_base.css"></head>
+<body>
+<div class="bar"></div>
+<div class="stage">
+  <div class="kicker" id="k">Tracer, against its own attack range</div>
+  <div class="row">
+    <div class="stat" id="s1"><div class="n" id="n1">0/16</div><div class="l">robbed an unprotected agent</div></div>
+    <div class="stat" id="s2"><div class="n" id="n2">0</div><div class="l">exfiltrations landed through Tracer</div></div>
+    <div class="stat" id="s3"><div class="n" id="n3">0/16</div><div class="l">user's real task still completed</div></div>
+  </div>
+  <div class="say" id="y">Every number reproducible with
+    <span style="font-family:'JB',monospace">npm run eval</span>. We publish what gets through.</div>
+</div>
+<div class="cite" id="c">SCORECARD.md — generated, not written. 89 assertions pass.</div>
+<script type="module">
+import { seg, enter, countTo } from './_frame.js';
+enter(document.getElementById('k'), seg(0.00, 0.12));
+enter(document.getElementById('s1'), seg(0.05, 0.22));
+enter(document.getElementById('s2'), seg(0.15, 0.32));
+enter(document.getElementById('s3'), seg(0.25, 0.42));
+document.getElementById('n1').textContent = countTo(16, seg(0.05, 0.38)) + '/16';
+document.getElementById('n2').textContent = '0';
+document.getElementById('n3').textContent = countTo(14, seg(0.25, 0.56)) + '/16';
+enter(document.getElementById('y'), seg(0.52, 0.72));
+enter(document.getElementById('c'), seg(0.64, 0.82));
+</script></body></html>

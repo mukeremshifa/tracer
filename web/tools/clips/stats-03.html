@@ -1,0 +1,30 @@
+<!doctype html><html><head><meta charset="utf-8"><link rel="stylesheet" href="_base.css">
+<style>
+  /* The strike draws itself across "near-zero" -- the beat of the whole card is
+     that these defences reported success and were then broken. */
+  .strike .rule{position:absolute;left:0;top:52%;height:6px;background:#f4f5f0;width:0}
+</style></head>
+<body>
+<div class="bar"></div>
+<div class="stage">
+  <div class="kicker" id="k">Defences that detect injection</div>
+  <div class="row" style="margin-bottom:10px">
+    <div class="stat" id="s1"><div class="n" id="n1">0</div><div class="l">published defences tested</div></div>
+    <div class="stat" id="s2"><div class="n" id="n2">0%</div><div class="l">attack success under adaptive attack</div></div>
+  </div>
+  <div class="mid" id="t" style="margin-top:52px">Most of them had reported
+    <span class="strike">near-zero.<span class="rule" id="r"></span></span></div>
+</div>
+<div class="cite" id="c">“The Attacker Moves Second: Stronger Adaptive Attacks Bypass Defenses<br>
+  Against LLM Jailbreaks and Prompt Injections” — arXiv:2510.09023</div>
+<script type="module">
+import { seg, enter, countTo, easeInOut } from './_frame.js';
+enter(document.getElementById('k'), seg(0.00, 0.12));
+enter(document.getElementById('s1'), seg(0.06, 0.24));
+enter(document.getElementById('s2'), seg(0.16, 0.34));
+document.getElementById('n1').textContent = countTo(12, seg(0.06, 0.34));
+document.getElementById('n2').textContent = '>' + countTo(90, seg(0.16, 0.46)) + '%';
+enter(document.getElementById('t'), seg(0.42, 0.62));
+document.getElementById('r').style.width = (easeInOut(seg(0.68, 0.90)) * 100).toFixed(2) + '%';
+enter(document.getElementById('c'), seg(0.74, 0.92));
+</script></body></html>

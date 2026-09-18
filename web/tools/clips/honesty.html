@@ -1,0 +1,18 @@
+<!doctype html><html><head><meta charset="utf-8"><link rel="stylesheet" href="_base.css"></head>
+<body>
+<div class="bar"></div>
+<div class="stage">
+  <div class="kicker" id="k">So we did not build a detector</div>
+  <div class="big" id="a">We do not claim to stop prompt injection.</div>
+  <div class="big" id="b" style="margin-top:10px"><em>Nobody has.</em></div>
+  <div class="say" id="y">Tracer assumes the model gets fooled — and makes the attack fail anyway.</div>
+</div>
+<script type="module">
+import { seg, enter } from './_frame.js';
+enter(document.getElementById('k'), seg(0.00, 0.14));
+enter(document.getElementById('a'), seg(0.08, 0.34));
+// The second line lands on its own beat. It is the line the whole video is
+// built to earn, so it gets a hold before anything else moves.
+enter(document.getElementById('b'), seg(0.40, 0.62));
+enter(document.getElementById('y'), seg(0.72, 0.90));
+</script></body></html>

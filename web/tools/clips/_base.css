@@ -1,0 +1,47 @@
+/* Shared look for every clip. Same three colours and two typefaces as the
+   product, loaded from the built assets so the footage and the site cannot
+   drift apart. */
+@font-face{font-family:'SG';src:url('/assets/space-grotesk-latin-700-normal-CwsQ-cCU.woff') format('woff');font-weight:700;font-display:block}
+@font-face{font-family:'SG';src:url('/assets/space-grotesk-latin-500-normal-CNSSEhBt.woff') format('woff');font-weight:500;font-display:block}
+@font-face{font-family:'JB';src:url('/assets/jetbrains-mono-latin-700-normal-D3wTyLJW.woff') format('woff');font-weight:700;font-display:block}
+@font-face{font-family:'JB';src:url('/assets/jetbrains-mono-latin-500-normal-CJOVTJB7.woff') format('woff');font-weight:500;font-display:block}
+
+*{margin:0;padding:0;box-sizing:border-box;border-radius:0}
+html,body{width:1920px;height:1080px;overflow:hidden}
+body{background:#131313;color:#f4f5f0;font:500 14px/1.65 'SG',system-ui,sans-serif}
+
+.stage{position:absolute;inset:0;padding:0 140px;display:flex;flex-direction:column;justify-content:center}
+.bar{position:absolute;left:0;top:0;bottom:0;width:10px;background:#cdfb41}
+
+.kicker{font:700 13px/1 'JB',monospace;letter-spacing:.3em;text-transform:uppercase;
+  color:rgba(244,245,240,.45);margin-bottom:34px}
+.huge{font:700 210px/.88 'JB',monospace;color:#cdfb41;letter-spacing:-.04em}
+.big{font:700 96px/1.06 'SG',sans-serif;letter-spacing:-.03em;max-width:24ch}
+.mid{font:700 62px/1.15 'SG',sans-serif;letter-spacing:-.025em;max-width:34ch}
+.say{font:500 30px/1.5 'SG',sans-serif;color:rgba(244,245,240,.8);max-width:44ch;margin-top:30px}
+.cite{position:absolute;left:140px;bottom:64px;font:500 17px/1.5 'JB',monospace;
+  color:rgba(244,245,240,.45);max-width:76ch}
+em{font-style:normal;color:#cdfb41}
+.strike{position:relative;color:rgba(244,245,240,.35)}
+
+.row{display:flex;gap:150px;align-items:flex-end;margin-top:14px}
+.stat .n{font:700 132px/1 'JB',monospace;color:#cdfb41;letter-spacing:-.03em}
+.stat .l{font:500 21px/1.4 'SG',sans-serif;color:rgba(244,245,240,.6);margin-top:16px;max-width:18ch}
+
+/* --- product-footage clips ------------------------------------------------
+   These reconstruct what the Viewer shows, at 1080p, from the checked-in
+   transcript. Same palette, same type, same wording as the running UI. */
+.panel{border:1px solid rgba(244,245,240,.12);padding:34px 38px;background:rgba(244,245,240,.04)}
+.ptitle{font:700 13px/1 'JB',monospace;letter-spacing:.24em;text-transform:uppercase;
+  color:rgba(244,245,240,.45);margin-bottom:22px}
+.callrow{display:flex;align-items:center;gap:22px;padding:18px 0;
+  border-bottom:1px solid rgba(244,245,240,.07);font:500 26px/1.3 'JB',monospace}
+.callrow:last-child{border-bottom:0}
+.verdict-tag{font:700 17px/1 'JB',monospace;letter-spacing:.14em;text-transform:uppercase;
+  padding:10px 14px;white-space:nowrap}
+.tag-allow{color:rgba(244,245,240,.55);border:1px solid rgba(244,245,240,.2)}
+.tag-hold{color:#131313;background:rgba(244,245,240,.8)}
+.tag-block{color:#131313;background:#cdfb41}
+.tag-robbed{color:#131313;background:#ff6b5e}
+.mono{font-family:'JB',monospace}
+.dim{color:rgba(244,245,240,.5)}

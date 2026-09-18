@@ -7,7 +7,12 @@
 import { toolsForProvider, TOOL_NAMES } from '../registry.js';
 import { planPrompt } from '../prompts.js';
 
-const TIMEOUT_MS = 60_000;
+// Gemini 2.5 Pro spends thinking tokens before it answers, and a contended
+// quota adds queueing on top. 60s was tight enough that a slow step aborted
+// mid-eval and read as a failed run.
+const TIMEOUT_MS = 180_000;
+const RETRIES = 5;
+const BACKOFF_MS = 2_000;
 
 async function accessToken() {
   const { GoogleAuth } = await import('google-auth-library');
@@ -22,17 +27,22 @@ function toContents(messages) {
   for (const m of messages) {
     if (m.role === 'system') continue;
     if (m.role === 'tool') {
-      contents.push({
-        role: 'user',
-        parts: [
-          {
-            functionResponse: {
-              name: m.name,
-              response: { content: m.content },
-            },
-          },
-        ],
-      });
+      // Gemini requires a model turn carrying N functionCall parts to be
+      // answered by ONE user turn carrying N functionResponse parts. Emitting a
+      // turn per tool result is a 400 the moment the model batches two calls,
+      // so consecutive tool messages coalesce into the turn already open.
+      const open = contents[contents.length - 1];
+      const part = {
+        functionResponse: {
+          name: m.name,
+          response: { content: m.content },
+        },
+      };
+      if (open && open.role === 'user' && open.parts.every((p) => p.functionResponse)) {
+        open.parts.push(part);
+      } else {
+        contents.push({ role: 'user', parts: [part] });
+      }
       continue;
     }
     if (m.role === 'assistant' && m.toolCalls && m.toolCalls.length) {
@@ -85,20 +95,40 @@ export function createVertexProvider(env) {
       headers.authorization = 'Bearer ' + (await accessToken());
     }
 
-    const ctl = new AbortController();
-    const timer = setTimeout(() => ctl.abort(), TIMEOUT_MS);
-    try {
-      const res = await fetch(url, {
-        method: 'POST',
-        headers,
-        body: JSON.stringify({ generationConfig: { temperature: 0 }, ...body }),
-        signal: ctl.signal,
-      });
-      const text = await res.text();
-      if (!res.ok) throw new Error('Gemini ' + res.status + ': ' + text.slice(0, 400));
-      return JSON.parse(text);
-    } finally {
-      clearTimeout(timer);
+    // A 429 is the expected steady state on a default Vertex quota, not an
+    // exceptional one: the eval fires dozens of runs back to back. Without a
+    // retry the call throws, the loop catches it into an empty plan, and the
+    // scorecard records NOT ATTEMPTED -- an exhausted quota reading as a clean
+    // sheet. Backing off is what keeps a live column honest.
+    let attempt = 0;
+    for (;;) {
+      const ctl = new AbortController();
+      const timer = setTimeout(() => ctl.abort(), TIMEOUT_MS);
+      let res;
+      let text;
+      try {
+        res = await fetch(url, {
+          method: 'POST',
+          headers,
+          body: JSON.stringify({ generationConfig: { temperature: 0 }, ...body }),
+          signal: ctl.signal,
+        });
+        text = await res.text();
+      } finally {
+        clearTimeout(timer);
+      }
+
+      if (res.ok) return JSON.parse(text);
+
+      const retryable = res.status === 429 || res.status === 503;
+      if (!retryable || attempt >= RETRIES) {
+        throw new Error('Gemini ' + res.status + ': ' + text.slice(0, 400));
+      }
+      // 2s, 4s, 8s, 16s, 32s -- plus jitter, so parallel callers do not
+      // resynchronise onto the same retry instant.
+      const wait = BACKOFF_MS * 2 ** attempt + Math.floor(Math.random() * 500);
+      await new Promise((r) => setTimeout(r, wait));
+      attempt += 1;
     }
   }
 

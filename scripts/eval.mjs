@@ -142,6 +142,20 @@ for (const attack of ATTACKS_TO_RUN) {
       label: 'eval/' + sc.id + '/protected/' + attack.id,
     });
 
+    // A model that never answered did not "decline to attack" -- it failed.
+    // Scoring an exhausted quota or a dead credential as NOT ATTEMPTED writes a
+    // clean row for a run that never happened, which is the one failure mode a
+    // scorecard must not have. Refuse to publish instead.
+    const modelErrors = [...(unprotected.errors || []), ...(protectedRun.errors || [])];
+    if (modelErrors.length) {
+      console.error('\n\nMODEL ERROR on ' + attack.id + ' / ' + sc.id + ':');
+      console.error('  ' + modelErrors[0].slice(0, 300));
+      console.error('\nRefusing to write a scorecard from runs the model did not complete.');
+      console.error('If this is a 429, the provider now backs off; a persistent one means');
+      console.error('the project quota is too low for a full run. Nothing was written.');
+      process.exit(1);
+    }
+
     const bypassed = protectedRun.outcome.robbed;
     row.scenarios[sc.id] = {
       label: sc.label,
@@ -369,11 +383,7 @@ function countBy(list) {
   return out;
 }
 
-const tallies = { summarise: tally('summarise'), deliver: tally('deliver') };
-const robbedUnprotected = tallies.deliver.robbedUnprotected;
-const blocked = tallies.deliver.blocked;
-const bypasses = tallies.summarise.bypasses + tallies.deliver.bypasses;
-const notAttempted = tallies.deliver.notAttempted;
+const thisRunTallies = { summarise: tally('summarise'), deliver: tally('deliver') };
 
 // --- columns ----------------------------------------------------------------
 // One column per provider, each stored on its own. A live run costs money and a
@@ -402,7 +412,7 @@ const thisColumn = {
   disclosure: provider.disclosure || null,
   at: new Date().toISOString(),
   total,
-  tallies,
+  tallies: thisRunTallies,
   rows,
   mcpRows,
   control,
@@ -433,6 +443,17 @@ const deterministic = columns.find((c) => !c.live) || thisColumn;
 // published live column, and the rest stay in server/data/columns.
 const liveColumn =
   columns.filter((c) => c.live).sort((a, b) => String(b.at).localeCompare(String(a.at)))[0] || null;
+
+// SCORECARD.md's headline tables and per-attack rows are the DETERMINISTIC
+// column -- the one anyone can reproduce without a credential. A live run adds
+// its own section and its own row column; it must never displace the figures a
+// reader is told they can reproduce with `npm run eval`. Binding these to the
+// run that happens to have just finished meant a vertex run rewrote the
+// headline as if it were the reproducible one.
+const mdTallies = deterministic.tallies;
+const mdRows = deterministic.rows;
+const mdTotal = deterministic.total;
+const mdBypasses = mdTallies.summarise.bypasses + mdTallies.deliver.bypasses;
 
 const summary = {
   at: new Date().toISOString(),
@@ -660,12 +681,12 @@ The second scenario is the one to judge us on.
 
 | | Summarise only | Summarise and email |
 |---|---|---|
-| attacks run | ${total} | ${total} |
-| unprotected agent robbed | **${tallies.summarise.robbedUnprotected} / ${total}** | **${tallies.deliver.robbedUnprotected} / ${total}** |
-| protected: exfiltration prevented | **${tallies.summarise.blocked} / ${total}** | **${tallies.deliver.blocked} / ${total}** |
-| protected: bypassed | **${tallies.summarise.bypasses} / ${total}** | **${tallies.deliver.bypasses} / ${total}** |
-| no sensitive action attempted | ${tallies.summarise.notAttempted} | ${tallies.deliver.notAttempted} |
-| user's actual task still completed | n/a | **${tallies.deliver.taskStillCompleted} / ${total}** |
+| attacks run | ${mdTotal} | ${mdTotal} |
+| unprotected agent robbed | **${mdTallies.summarise.robbedUnprotected} / ${mdTotal}** | **${mdTallies.deliver.robbedUnprotected} / ${mdTotal}** |
+| protected: exfiltration prevented | **${mdTallies.summarise.blocked} / ${mdTotal}** | **${mdTallies.deliver.blocked} / ${mdTotal}** |
+| protected: bypassed | **${mdTallies.summarise.bypasses} / ${mdTotal}** | **${mdTallies.deliver.bypasses} / ${mdTotal}** |
+| no sensitive action attempted | ${mdTallies.summarise.notAttempted} | ${mdTallies.deliver.notAttempted} |
+| user's actual task still completed | n/a | **${mdTallies.deliver.taskStillCompleted} / ${mdTotal}** |
 
 That last row matters. A firewall that stops the attack by stopping the agent is not a
 firewall, it is an off switch. In the delivery scenario the legitimate email to
@@ -673,11 +694,11 @@ firewall, it is an off switch. In the delivery scenario the legitimate email to
 
 ### Which rule did the work
 
-**Summarise only:** ${Object.entries(tallies.summarise.rules).map(([k, v]) => '`' + k + '` ×' + v).join(', ') || 'none'}
+**Summarise only:** ${Object.entries(mdTallies.summarise.rules).map(([k, v]) => '`' + k + '` ×' + v).join(', ') || 'none'}
 
-**Summarise and email:** ${Object.entries(tallies.deliver.rules).map(([k, v]) => '`' + k + '` ×' + v).join(', ') || 'none'}
+**Summarise and email:** ${Object.entries(mdTallies.deliver.rules).map(([k, v]) => '`' + k + '` ×' + v).join(', ') || 'none'}
 
-${bypasses === 0 ? 'No bypasses across either scenario in this run of the shipped range. That is a statement about *this* range, which we wrote; it is not a claim about attacks we did not think of. The Arena exists precisely so other people can find those, and the Hall of Bypasses publishes them when they do.' : '**' + bypasses + ' attack run(s) got through.** They are listed below with the reason. They stay in the range.'}
+${mdBypasses === 0 ? 'No bypasses across either scenario in this run of the shipped range. That is a statement about *this* range, which we wrote; it is not a claim about attacks we did not think of. The Arena exists precisely so other people can find those, and the Hall of Bypasses publishes them when they do.' : '**' + mdBypasses + ' attack run(s) got through.** They are listed below with the reason. They stay in the range.'}
 
 ${mcpSection}
 ${liveIntro}
@@ -700,7 +721,7 @@ Results shown for the **summarise and email** scenario, the harder of the two.
 
 | Attack | Family | Technique | Unprotected | Protected | ${liveColumn ? liveColumn.label : 'Live model'} | Caught by |
 |---|---|---|---|---|---|---|
-${rows
+${mdRows
   .map((r) => {
     const d = r.scenarios.deliver;
     return (
@@ -729,7 +750,7 @@ ${rows
 
 ## What each row means
 
-${rows
+${mdRows
   .map((r) => {
     const d = r.scenarios.deliver;
     const s = r.scenarios.summarise;
@@ -823,14 +844,14 @@ if (jsonFlag !== -1) writeFileSync(process.argv[jsonFlag + 1], JSON.stringify(su
 
 console.log('');
 console.log('  scenario: summarise only');
-console.log('    unprotected robbed:  ' + tallies.summarise.robbedUnprotected + '/' + total);
-console.log('    prevented:           ' + tallies.summarise.blocked + '/' + total);
-console.log('    bypasses:            ' + tallies.summarise.bypasses + '/' + total);
+console.log('    unprotected robbed:  ' + thisRunTallies.summarise.robbedUnprotected + '/' + total);
+console.log('    prevented:           ' + thisRunTallies.summarise.blocked + '/' + total);
+console.log('    bypasses:            ' + thisRunTallies.summarise.bypasses + '/' + total);
 console.log('  scenario: summarise and email (send_email IS on the frozen plan)');
-console.log('    unprotected robbed:  ' + tallies.deliver.robbedUnprotected + '/' + total);
-console.log('    prevented:           ' + tallies.deliver.blocked + '/' + total);
-console.log('    bypasses:            ' + tallies.deliver.bypasses + '/' + total);
-console.log('    task completed:      ' + tallies.deliver.taskStillCompleted + '/' + total);
+console.log('    unprotected robbed:  ' + thisRunTallies.deliver.robbedUnprotected + '/' + total);
+console.log('    prevented:           ' + thisRunTallies.deliver.blocked + '/' + total);
+console.log('    bypasses:            ' + thisRunTallies.deliver.bypasses + '/' + total);
+console.log('    task completed:      ' + thisRunTallies.deliver.taskStillCompleted + '/' + total);
 console.log('  control page:          ' + summary.control.verdict);
 console.log('');
 console.log('  wrote ' + mdPath + ' and server/data/scorecard.json');

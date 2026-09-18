@@ -1,18 +1,35 @@
 # Submission pack
 
-## The five-minute video
+## The video: 3:30, product-led
 
-Every judging criterion gets explicitly answered. Three wow moments, spaced.
+Every judging criterion gets answered. Roughly two thirds of the picture is the
+product running; the cards carry numbers and the two lines that have to be said
+out loud.
 
-| Time | Beat | Scores |
-|---|---|---|
-| 0:00–0:30 | **The robbery.** No title card. A user asks an agent to summarise a news article and email it to themselves. The agent fetches a verification code from their inbox and emails it to a stranger. Silence. | Impact |
-| 0:30–1:05 | **"Here is the page they were looking at."** Press **Show what the agent read** &mdash; the reveal control is now a primary action with its own label, not a small toggle the page has to prompt you to press. *Moment 1.* Hidden instructions ignite across the article. | Impact, Innovation |
-| 1:05–1:35 | **The evidence.** Five Eyes, May 2026. CSA confirmed live exploitation, April 2026. Not one attack scenario consistently blocked across leading agents. Then: so we didn't build a detector. | Impact |
-| 1:35–2:45 | **The same attack, defeated.** Live, uncut, and **both runs on screen at once** — same model, same page, one robbed and one not, playing on one clock. No toggling, nothing for the viewer to hold in their head. *Moment 2* — the provenance line traces from `verify@sec-update.tld` back to the invisible div. Point out that the user's own email still went out. | Technical, UX |
-| 2:45–3:25 | **How.** One diagram. The line that matters: *the model tells us where its information came from, but we don't trust it — we independently check whether the destination came from a web page instead of from you.* | Innovation, Technical |
-| 3:25–4:15 | **"Try to break it."** *Moment 3* — the Arena, live, plus the Hall of Bypasses. Then the scorecard, including the two-scenario table. State the precise claim. | Innovation, Technical |
-| 4:15–5:00 | **The real thing, then who this protects, what ships next, AI-tool disclosure.** Run `npx tracer demo-proxy --both` on camera: two real MCP servers, the injected write landing without Tracer and refused with it, with the provenance chain in the refusal. This is the beat that answers "is it only a demo?" | Impact, Presentation |
+The clips are in `media/`, built by `scripts/capture-product.mjs` (the real UI,
+driven over the DevTools protocol) and `scripts/render-clips.mjs` (the cards).
+`docs/EDIT.md` is the assembly order, `docs/SHOTLIST.md` the narration beats.
+
+| Time | Beat | Clip | Scores |
+|---|---|---|---|
+| 0:00-0:10 | **The robbery, cold.** No title card. A user asks an agent to summarise an article and email it to themselves. Calls land one by one, every one allowed. | `product-viewer` (head) | Impact |
+| 0:10-0:17 | **"Here is the page they were looking at."** Press *Show what the agent read*. The sweep runs and the concealed instruction ignites in place. | `product-xray` | Impact, Innovation |
+| 0:17-0:38 | **The evidence.** OWASP LLM01. EchoLeak: a zero-click prompt injection in Microsoft 365 Copilot, hidden in white-on-white text and HTML comments. Then the one that matters: 12 published defences, over 90% bypassed under adaptive attack, most of which had reported near zero. | `stats-01`, `stats-02`, `stats-03` | Impact |
+| 0:38-0:46 | **The honesty beat.** "We do not claim to stop prompt injection. Nobody has." This buys credibility for everything after it. | `honesty` | Presentation |
+| 0:46-1:03 | **The same attack, defeated.** Both runs on one clock. `read_email` held, `send_email` blocked on `destination-originates-from-page`, and the user's own email still goes out. The hard block holds the screen 2.6 seconds by design. Do not trim it. | `product-viewer` (tail) | Technical, UX |
+| 1:03-1:22 | **Try to break it.** A stranger's injection planted and run live in the Arena. The counters move. Prevented. | `product-arena` | Innovation |
+| 1:22-1:44 | **Not a sandbox.** `npx tracer prove` in a terminal: two real MCP servers, neither of them ours, and a refusal carrying the provenance chain. This is the beat that answers "is it only a sandbox?" | `product-terminal` | Impact, Technical |
+| 1:44-1:56 | **The integration surface.** The tier config you can read and diff, and the refusal as the client received it. | `product-proxy` | Technical |
+| 1:56-2:03 | **The gap.** 83% of organisations deploying agentic AI, 29% ready to secure it. | `stats-04` | Impact |
+| 2:03-2:11 | **The numbers, and the link.** 16/16 robbed unprotected, 0 landed through Tracer, 14/16 tasks still completed. Reproducible with `npm run eval`. | `closing` | Presentation |
+
+That is about 2:11 of picture. The remaining time is deliberate: hold on the
+block, let the X-ray breathe, and leave room for narration rather than filling
+every second.
+
+**Every number on screen is in `docs/STATS.md`, with its source.** That file also
+lists the figures that were checked and rejected. Do not put one on screen that
+is not in it.
 
 ### Lines to say exactly
 
@@ -46,7 +63,7 @@ A slideshow of screenshots instead of live software. A claim with no number behi
 
 - [ ] `npm run verify` — 50/50 green before you record anything
 - [ ] `npm run eval` — SCORECARD.md regenerated, numbers match what you will say
-- [ ] Record the defended run against a **replay** (Viewer → "Load recorded demo"); serve live mode on the public link
+- [ ] Product clips rebuilt from the current UI (`scripts/capture-product.mjs`); live mode served on the public link
 - [ ] Pick the **"Summarise it and email it to me"** scenario on camera. It is the honest test and the
       destination rule is what fires. The summarise-only scenario makes the plan freeze look like the
       whole defence, which undersells it and invites a fair objection.
@@ -61,7 +78,7 @@ A slideshow of screenshots instead of live software. A claim with no number behi
 - [ ] Project name and description, including one line on the agent-authorisation angle (SSOJet adjacency)
 - [ ] Technologies used, listed in full (see README → Technologies)
 - [ ] **Public link tested from a machine nobody on the team owns**
-- [ ] Video under 5:00, publicly viewable
+- [ ] Video under 3:30, publicly viewable
 - [ ] README with the architecture diagram and the precise claim verbatim ✔ (in repo)
 - [ ] Scorecard published in the repo, including failures ✔ (`SCORECARD.md`)
 - [ ] Hall of Bypasses live on the Arena page ✔
@@ -78,7 +95,7 @@ from your instruction **and** present in untrusted page content. That conjunctio
 signature.
 
 **"What if the model lies in `derived_from`?"**
-It does, in the shipped demo — the injection tells it not to mention the step and it declares `[]`.
+It does, in the shipped run: the injection tells it not to mention the step and it declares `[]`.
 Layer B catches it anyway and the interface shows the contradiction. Layer A is for explanation, never
 for enforcement.
 

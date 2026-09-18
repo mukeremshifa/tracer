@@ -58,11 +58,27 @@ for (const line of lines) {
   if (take < line.length) break;
 }
 
-const term = document.getElementById('term');
-term.innerHTML = out.join('\n');
+// Scroll by dropping lines off the top rather than by measuring and
+// translating. Measurement needs layout to have happened, and under a virtual
+// time budget it reliably has not: the earlier version translated the whole
+// block off screen and the back two thirds of the clip rendered blank.
+//
+// Counting is exact here because the type is monospace at a known size, so how
+// many rows fit is arithmetic, not a question for the layout engine.
+const LINE_PX = 19 * 1.55;                     // font-size * line-height
+const ROWS = Math.floor((1080 - 44 - 52) / LINE_PX);
 
-// Keep the tail in view once the output runs past the window, the way a real
-// terminal scrolls rather than overflowing.
-const over = term.scrollHeight - term.clientHeight;
-if (over > 0) term.style.transform = 'translateY(' + (-over) + 'px)';
+// Long lines wrap, so a row is not a line. Count the rows each one occupies at
+// the known character width, or the tail drifts as soon as output gets wide.
+const COLS = Math.floor((1920 - 68) / (19 * 0.6));
+const rowsOf = (l) => Math.max(1, Math.ceil(l.length / COLS));
+
+let rows = 0;
+let from = out.length;
+while (from > 0 && rows + rowsOf(lines[from - 1] || '') <= ROWS) {
+  from -= 1;
+  rows += rowsOf(lines[from] || '');
+}
+
+document.getElementById('term').innerHTML = out.slice(from).join('\n');
 </script></body></html>

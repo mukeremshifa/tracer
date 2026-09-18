@@ -46,8 +46,15 @@ if (!raw.trim()) { console.error('no output from tracer prove'); process.exit(1)
 
 // The command prints absolute paths from this machine. Keep the shape, drop the
 // part that is only true here.
+// Absolute paths from this machine become a repo-relative stand-in. The shape
+// of the output is the point; the directory layout is not. Both slash
+// conventions appear, because the run spans Node and a Windows shell, and a
+// plain split/join avoids having to escape either of them into a regexp.
+const winRepo = REPO.replace(/\//g, '\\');
+const scrub = (l) => l.split(REPO).join('.').split(winRepo).join('.');
+
 const lines = ['$ npx tracer prove', ''].concat(
-  raw.replace(/\r/g, '').split('\n').map((l) => l.replace(new RegExp(REPO.replace(/[\/]/g, '[\\/]'), 'g'), '.')),
+  raw.replace(/\r/g, '').split('\n').map(scrub),
 );
 writeFileSync(path.join(CLIPS, 'terminal-lines.json'), JSON.stringify(lines, null, 0));
 

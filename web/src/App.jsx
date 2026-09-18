@@ -1,61 +1,54 @@
 import { useEffect, useState } from 'react';
 import { api } from './lib/api.js';
 import { Home } from './components/Home.jsx';
-import { Viewer } from './components/Viewer.jsx';
-import { Arena } from './components/Arena.jsx';
+import { Sandbox } from './components/Sandbox.jsx';
+import { Dashboard } from './components/Dashboard.jsx';
 import { Scorecard } from './components/Scorecard.jsx';
-import { Proxy } from './components/Proxy.jsx';
-import { Extension } from './components/Extension.jsx';
 import { About } from './components/About.jsx';
 
-// The nav is the argument. A visitor who reads nothing else should be able to
-// tell from these three groups that Tracer is more than a demo: one surface to
-// try, one to test your own agent with, one to put in front of it.
-//
-// The labels say that in words rather than in our words for it. "Range" is
-// firing-range jargon and "sandbox" reads as toy -- which is the exact
-// impression the rest of the project works to escape.
+// One row, four destinations. The old nav grouped seven tabs under three
+// headings to argue that Tracer was more than a demo -- an argument the
+// landing page now makes by showing the thing instead of labelling it.
 const NAV = [
-  {
-    group: 'Try it',
-    items: [
-      { id: 'sandbox', label: 'Viewer' },
-      { id: 'arena', label: 'Arena' },
-    ],
-  },
-  {
-    group: 'Test your agent',
-    items: [{ id: 'scorecard', label: 'Scorecard' }],
-  },
-  {
-    group: 'Protect your agent',
-    items: [
-      { id: 'proxy', label: 'MCP proxy' },
-      { id: 'extension', label: 'Extension' },
-    ],
-  },
-  {
-    group: null,
-    items: [{ id: 'how', label: 'How it works' }],
-  },
+  { id: 'sandbox', label: 'Sandbox' },
+  { id: 'dashboard', label: 'Dashboard' },
+  { id: 'scorecard', label: 'Scorecard' },
+  { id: 'how', label: 'How it works' },
 ];
 
-const ROUTES = ['home', ...NAV.flatMap((g) => g.items.map((i) => i.id))];
+const ROUTES = ['home', ...NAV.map((n) => n.id)];
 
 // Old hashes stay live. Links get shared, and a 404 on a link someone posted is
-// a worse outcome than a redirect nobody notices.
-const ALIASES = { viewer: 'sandbox', about: 'how', '': 'home' };
+// a worse outcome than a redirect nobody notices. The proxy and extension pages
+// folded into the landing page's install section; the arena folded into the
+// sandbox.
+const ALIASES = {
+  viewer: 'sandbox',
+  arena: 'sandbox',
+  proxy: 'home',
+  extension: 'home',
+  about: 'how',
+  '': 'home',
+};
 
-function hashTab() {
-  const h = (window.location.hash || '').replace('#', '');
-  const resolved = ALIASES[h] || h;
-  return ROUTES.includes(resolved) ? resolved : 'home';
+const REPO = 'https://github.com/mukeremshifa/tracer';
+
+function parseHash() {
+  const raw = (window.location.hash || '').replace('#', '');
+  const [path, query] = raw.split('?');
+  const resolved = ALIASES[path] != null ? ALIASES[path] : path;
+  return {
+    tab: ROUTES.includes(resolved) ? resolved : 'home',
+    params: new URLSearchParams(query || ''),
+  };
 }
 
 export default function App() {
-  const [tab, setTab] = useState(hashTab);
+  const [route, setRoute] = useState(parseHash);
   const [meta, setMeta] = useState(null);
   const [error, setError] = useState(null);
+
+  const { tab, params } = route;
 
   useEffect(() => {
     api
@@ -65,25 +58,37 @@ export default function App() {
   }, []);
 
   useEffect(() => {
-    const onHash = () => setTab(hashTab());
+    const onHash = () => setRoute(parseHash());
     window.addEventListener('hashchange', onHash);
     return () => window.removeEventListener('hashchange', onHash);
   }, []);
 
   // Rewrite an alias in the address bar so the canonical hash is what gets
-  // copied out of it next time.
+  // copied out of it next time. Query strings are left alone -- #sandbox?attack=x
+  // is canonical, not an alias.
   useEffect(() => {
     const raw = (window.location.hash || '').replace('#', '');
-    if (raw !== tab) window.location.hash = tab;
+    const [path] = raw.split('?');
+    if (path !== tab && !raw.includes('?')) window.location.hash = tab;
   }, [tab]);
 
   const go = (id) => {
     window.location.hash = id;
-    setTab(id);
+    setRoute(parseHash());
     window.scrollTo({ top: 0 });
   };
 
-  const provider = meta && (meta.providers || []).find((p) => p.id === meta.activeProvider);
+  // The install section lives on the landing page. From anywhere else, go there
+  // first and then scroll -- the hash change has to land before the element
+  // exists to scroll to.
+  const goInstall = () => {
+    if (tab !== 'home') {
+      go('home');
+      setTimeout(() => scrollToInstall(), 80);
+    } else {
+      scrollToInstall();
+    }
+  };
 
   return (
     <div className="app">
@@ -110,36 +115,26 @@ export default function App() {
         </button>
 
         <nav className="tabs" role="tablist">
-          {NAV.map((g, i) => (
-            <span className="nav-group" key={g.group || 'x' + i}>
-              {g.group && <span className="nav-group-label">{g.group}</span>}
-              <span className="nav-group-items">
-                {g.items.map((t) => (
-                  <button
-                    key={t.id}
-                    className="tab"
-                    role="tab"
-                    aria-selected={tab === t.id ? 'true' : 'false'}
-                    onClick={() => go(t.id)}
-                  >
-                    {t.label}
-                  </button>
-                ))}
-              </span>
-            </span>
+          {NAV.map((t) => (
+            <button
+              key={t.id}
+              className="tab"
+              role="tab"
+              aria-selected={tab === t.id ? 'true' : 'false'}
+              onClick={() => go(t.id)}
+            >
+              {t.label}
+            </button>
           ))}
         </nav>
 
         <div className="topbar-right">
-          {provider && (
-            <span className="provider-chip" title={provider.ready ? 'ready' : 'not configured'}>
-              <span className={'dot ' + (meta.activeProvider === 'simulated' ? 'sim' : 'live')} />
-              {provider.label}
-            </span>
-          )}
-          <a className="tiny faint" href="/range" target="_blank" rel="noreferrer">
-            attack range &#8599;
+          <a className="tiny faint" href={REPO} target="_blank" rel="noreferrer noopener">
+            GitHub &#8599;
           </a>
+          <button className="btn sm" onClick={goInstall}>
+            Install
+          </button>
         </div>
       </header>
 
@@ -162,21 +157,28 @@ export default function App() {
         )}
 
         {meta && tab === 'home' && <Home meta={meta} go={go} />}
-        {meta && tab === 'sandbox' && <Viewer meta={meta} go={go} />}
-        {meta && tab === 'arena' && <Arena meta={meta} go={go} />}
+        {meta && tab === 'sandbox' && (
+          <Sandbox meta={meta} go={go} initialAttack={params.get('attack')} />
+        )}
+        {meta && tab === 'dashboard' && <Dashboard go={go} />}
         {meta && tab === 'scorecard' && <Scorecard go={go} />}
-        {meta && tab === 'proxy' && <Proxy go={go} />}
-        {meta && tab === 'extension' && <Extension go={go} />}
         {meta && tab === 'how' && <About meta={meta} />}
       </main>
 
       <footer className="page" style={{ paddingTop: 0 }}>
-        <div className="wrap tiny faint" style={{ borderTop: '1px solid var(--hair)', paddingTop: 22, maxWidth: '72ch' }}>
-          Tracer is defensive. The attack range is self-contained and every destination on it is
-          non-resolvable; nothing here targets infrastructure we do not own. In the sandbox, all six agent
-          tools are mocks and perform no network I/O.
+        <div
+          className="wrap tiny faint"
+          style={{ borderTop: '1px solid var(--hair)', paddingTop: 22, maxWidth: '72ch' }}
+        >
+          Tracer is defensive. The attack range is self-contained, every destination on it is
+          non-resolvable, and in the sandbox all six agent tools are mocks that perform no network I/O.
         </div>
       </footer>
     </div>
   );
+}
+
+function scrollToInstall() {
+  const el = document.getElementById('install');
+  if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
 }

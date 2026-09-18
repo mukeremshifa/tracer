@@ -12,7 +12,7 @@
 import { createServer } from 'node:http';
 import { readFile } from 'node:fs/promises';
 import { dirname, join, normalize } from 'node:path';
-import { fileURLToPath } from 'node:url';
+import { fileURLToPath, pathToFileURL } from 'node:url';
 
 const here = dirname(fileURLToPath(import.meta.url));
 const ROOT = join(here, 'site');
@@ -50,7 +50,10 @@ export function createRangeServer() {
 
 const PORT = Number(arg('--port', process.env.DEMO_PORT || 4310));
 
-if (import.meta.url === 'file://' + process.argv[1].replace(/\\/g, '/')) {
+// Spelled out by hand, this never matched on Windows: Node writes the URL as
+// file:///D:/... and 'file://' + path is a slash short, so running the file
+// directly started nothing and exited 0.
+if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
   createRangeServer().listen(PORT, '127.0.0.1', () => {
     process.stderr.write('demo range on http://127.0.0.1:' + PORT + '/vendor-brief.html\n');
   });

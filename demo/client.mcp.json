@@ -1,0 +1,12 @@
+{
+  "mcpServers": {
+    "tracer": {
+      "command": "node",
+      "args": [
+        "adapters/mcp/bin/tracer-proxy.mjs",
+        "--config",
+        "demo/tiers.json"
+      ]
+    }
+  }
+}

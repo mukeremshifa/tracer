@@ -34,7 +34,7 @@ import {
   CallToolRequestSchema,
   ListToolsRequestSchema,
 } from '@modelcontextprotocol/sdk/types.js';
-import { BLOCK, ESCALATE, stripZeroWidth } from '@tracer/core';
+import { BLOCK, ESCALATE, stripZeroWidth } from '@mukeremshifa/tracer-core';
 
 import { createProxyRegistry, untrustedMatcher, explainCoverage } from './config.js';
 import { ProxySession } from './session.js';

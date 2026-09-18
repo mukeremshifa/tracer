@@ -7,7 +7,7 @@
 // otherwise, because a mock inbox is a mock inbox.
 //
 // This file used to *be* the registry. It is now one configuration of the
-// registry schema in @tracer/core — the sandbox's configuration. The MCP proxy
+// registry schema in @mukeremshifa/tracer-core — the sandbox's configuration. The MCP proxy
 // has its own (adapters/mcp/tiers.json) and neither knows about the other.
 //
 // Every tier 1 and 2 tool takes a mandatory `derived_from`: the span IDs the
@@ -15,7 +15,7 @@
 // explanation and it is never load-bearing on its own -- see core/src/policy.js.
 // ---------------------------------------------------------------------------
 
-import { createRegistry, TIERS, DERIVED_FROM } from '@tracer/core';
+import { createRegistry, TIERS, DERIVED_FROM } from '@mukeremshifa/tracer-core';
 
 export { TIERS };
 

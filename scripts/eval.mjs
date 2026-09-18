@@ -19,7 +19,7 @@ import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { JSDOM } from 'jsdom';
 
-import { analyse, encodeBinary } from '@tracer/core';
+import { analyse, encodeBinary } from '@mukeremshifa/tracer-core';
 import {
   ATTACKS,
   MCP_ATTACKS,

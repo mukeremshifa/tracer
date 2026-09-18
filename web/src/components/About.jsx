@@ -129,7 +129,7 @@ export function About({ meta }) {
           <p className="lede" style={{ margin: 0 }}>
             This is not a shortcut around a headless browser. In a real browser agent, the agent <i>is</i> the
             browser. It also means there is no Playwright image, no container, and no cold start &mdash; and
-            the Arena can analyse a stranger&rsquo;s page instantly, in their own browser.
+            the sandbox can analyse a stranger&rsquo;s page instantly, in their own browser.
           </p>
           <p className="lede" style={{ margin: 0 }}>
             The iframe is loaded without <span className="mono">allow-scripts</span> and the pages are served
@@ -167,13 +167,13 @@ export function About({ meta }) {
             rather say so than imply otherwise.
           </div>
           <div>
-            The agent browses only local range pages and Arena-generated pages. It never touches the live web.
+            The agent browses only local range pages and pages planted in the sandbox. It never touches the live web.
             Every exfiltration destination uses a non-resolvable host, so nothing here targets infrastructure we
             do not own.
           </div>
           <div>
             The default model provider is deterministic and is <b>not</b> a language model: it reproduces one
-            behaviour, treating page text as an instruction. That keeps the public Arena free to run and the
+            behaviour, treating page text as an instruction. That keeps the public sandbox free to run and the
             scorecard reproducible without a key. Tracer&rsquo;s defence inspects tool calls and provenance and
             never model internals, so the policy engine is identical behind a live model &mdash; set{' '}
             <span className="mono">MODEL_PROVIDER=openai</span> or <span className="mono">vertex</span> and the

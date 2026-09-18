@@ -21,7 +21,7 @@
 
 import { randomUUID } from 'node:crypto';
 import { SITE_CSS } from '../../shared/site-css.js';
-import { encodeBinary } from '@tracer/core';
+import { encodeBinary } from '@mukeremshifa/tracer-core';
 import { saveArenaPage } from './store.js';
 
 export const TECHNIQUES = {

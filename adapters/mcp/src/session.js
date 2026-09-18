@@ -2,7 +2,7 @@
 // A proxied conversation, from Tracer's point of view.
 //
 // The proxy does not drive the agent -- some other client does -- so there is
-// no loop here. There is a run context, exactly the one @tracer/core's policy
+// no loop here. There is a run context, exactly the one @mukeremshifa/tracer-core's policy
 // engine expects, kept alive across calls: the declared task, the plan frozen
 // with it, every untrusted span that has arrived in a tool result since, and
 // the secrets that came back from tier-1 reads.
@@ -13,7 +13,7 @@
 // becomes unattributable, so it escalates rather than runs. See the README.
 // ---------------------------------------------------------------------------
 
-import { createContext, evaluate, analyseText, ALLOW, BLOCK, ESCALATE } from '@tracer/core';
+import { createContext, evaluate, analyseText, ALLOW, BLOCK, ESCALATE } from '@mukeremshifa/tracer-core';
 
 const SECRET_PATTERNS = [
   { kind: 'one-time passcode', re: /\b\d{3}[- ]\d{3}\b/g },

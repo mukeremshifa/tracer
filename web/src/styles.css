@@ -32,6 +32,11 @@
   --acid-12: rgba(205, 251, 65, 0.12);
   --ink-60: rgba(19, 19, 19, 0.6);
 
+  /* The one colour outside the three. It marks the unprotected side of a
+     comparison and nothing else -- if it starts appearing on warnings and
+     errors too it stops meaning "this is the robbery". */
+  --warn: #ff6b5e;
+
   --sans: 'Space Grotesk', Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
   --mono: 'JetBrains Mono', ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
 
@@ -217,9 +222,19 @@ a:hover {
 }
 @media (max-width: 1080px) {
   .split {
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(0, 1fr);
     gap: 40px;
   }
+}
+/* A grid track is auto-sized by default, so a <pre> with long unbreakable lines
+   widens the track instead of scrolling inside it -- the code blocks in the MCP
+   evidence panel push the whole page sideways on a phone without this. */
+.split > * {
+  min-width: 0;
+}
+.code,
+.code-body {
+  max-width: 100%;
 }
 
 /* A "panel" is no longer a box. It is a labelled region with air around it and,
@@ -1448,7 +1463,6 @@ h1.viewer-title {
   min-width: 0;
   padding: 8px;
   border: 1px solid transparent;
-  border-radius: 10px;
   cursor: pointer;
 }
 .ab-col.focused {
@@ -1468,7 +1482,7 @@ h1.viewer-title {
   letter-spacing: 0.01em;
 }
 .ab-title.unprotected {
-  color: #ff6b5e;
+  color: var(--warn);
 }
 .ab-title.protected {
   color: var(--acid);
@@ -1525,4 +1539,558 @@ h1.viewer-title {
   .shot-pair {
     grid-template-columns: 1fr;
   }
+}
+
+/* ===========================================================================
+   REVAMP — landing, sandbox shell, dashboard
+   ===========================================================================
+   Everything below reuses the tokens above. The rule the rest of this file
+   follows still holds here: acid is spent on the thing that matters and
+   nothing else, and a box is a hairline, not a card.
+   ------------------------------------------------------------------------ */
+
+/* --- hero ----------------------------------------------------------------- */
+
+.lede-hero {
+  padding: 56px 0 0;
+}
+h1.lede-title {
+  font: 700 clamp(34px, 4.6vw, 62px) / 1.02 var(--sans);
+  letter-spacing: -0.04em;
+  max-width: 21ch;
+  margin: 0;
+}
+/* The second line is the payoff, not an aside. It steps back from the first
+   line without receding out of reading range -- at --bone-30 the most important
+   sentence on the page was also the hardest one to read. */
+h1.lede-title .dim {
+  color: var(--bone-60);
+}
+.lede-sub {
+  font-size: 18px;
+  line-height: 1.55;
+  color: var(--bone-80);
+  max-width: 54ch;
+  margin: 26px 0 0;
+}
+.lede-sub b {
+  color: var(--bone);
+  font-weight: 700;
+}
+.lede-actions {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
+  margin-top: 34px;
+}
+
+/* The install command as a control: it is the second CTA, so it has to look
+   clickable rather than look like a code sample that happens to sit nearby. */
+.copyline {
+  display: inline-flex;
+  align-items: center;
+  gap: 14px;
+  border: 1px solid var(--hair);
+  background: transparent;
+  color: var(--bone-80);
+  padding: 13px 18px;
+  cursor: pointer;
+  font: 500 12.5px/1 var(--mono);
+  transition: border-color 0.12s, color 0.12s;
+}
+.copyline:hover {
+  border-color: var(--bone-30);
+  color: var(--bone);
+}
+.copyline .prompt {
+  color: var(--acid);
+}
+.copyline .copied {
+  font-size: 10px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--acid);
+}
+
+/* --- section furniture ---------------------------------------------------- */
+
+.band {
+  border-top: 1px solid var(--hair);
+  padding-top: 26px;
+  margin-top: 104px;
+}
+.band-label {
+  font: 700 10.5px/1 var(--mono);
+  letter-spacing: 0.24em;
+  text-transform: uppercase;
+  color: var(--bone-45);
+}
+h2.band-title {
+  font: 700 clamp(26px, 3vw, 38px) / 1.08 var(--sans);
+  letter-spacing: -0.03em;
+  margin: 20px 0 0;
+  max-width: 24ch;
+}
+.band-lede {
+  font-size: 15.5px;
+  line-height: 1.7;
+  color: var(--bone-60);
+  max-width: 62ch;
+  margin: 16px 0 0;
+}
+.band-head-row {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 24px;
+  flex-wrap: wrap;
+}
+
+/* --- the three beats ------------------------------------------------------ */
+
+.beats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 1px;
+  background: var(--hair);
+  border: 1px solid var(--hair);
+  margin-top: 36px;
+}
+.beat {
+  background: var(--ink);
+  padding: 30px 28px 32px;
+}
+.beat-n {
+  font: 700 10px/1 var(--mono);
+  letter-spacing: 0.24em;
+  color: var(--acid);
+}
+h3.beat-title {
+  font: 700 20px/1.2 var(--sans);
+  letter-spacing: -0.02em;
+  margin: 18px 0 0;
+}
+.beat-body {
+  font-size: 14px;
+  line-height: 1.7;
+  color: var(--bone-60);
+  margin: 12px 0 0;
+}
+
+/* --- the attack range grid ------------------------------------------------ */
+
+.range-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 1px;
+  background: var(--hair);
+  border: 1px solid var(--hair);
+  margin-top: 32px;
+}
+.range-col {
+  background: var(--ink);
+  padding: 24px 22px 26px;
+}
+.range-col-head {
+  font: 700 10px/1 var(--mono);
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--bone-45);
+  padding-bottom: 14px;
+  border-bottom: 1px solid var(--hair-soft);
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+}
+.range-chip {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  width: 100%;
+  background: none;
+  border: 0;
+  border-bottom: 1px solid var(--hair-soft);
+  padding: 13px 0;
+  cursor: pointer;
+  text-align: left;
+  color: var(--bone-80);
+  font: 500 12.5px/1.3 var(--mono);
+  transition: color 0.12s, padding-left 0.12s;
+}
+.range-chip:hover {
+  color: var(--bone);
+  padding-left: 6px;
+}
+.range-chip:last-child {
+  border-bottom: 0;
+}
+.range-chip .rd {
+  width: 7px;
+  height: 7px;
+  flex: none;
+  background: var(--acid);
+}
+.range-chip .rd.bypassed {
+  background: var(--warn);
+}
+.range-chip .rt {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.range-chip .rg {
+  font-size: 10px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--bone-30);
+  flex: none;
+}
+.range-chip:hover .rg {
+  color: var(--acid);
+}
+
+/* --- install tabs --------------------------------------------------------- */
+
+.install-panes {
+  border: 1px solid var(--hair);
+  margin-top: 28px;
+}
+.install-body {
+  padding: 30px 30px 34px;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 38px;
+  align-items: start;
+}
+@media (max-width: 900px) {
+  .install-body {
+    grid-template-columns: 1fr;
+    gap: 26px;
+    padding: 24px 20px 28px;
+  }
+}
+.install-say {
+  font-size: 14.5px;
+  line-height: 1.75;
+  color: var(--bone-60);
+  margin: 0;
+  max-width: 48ch;
+}
+.install-say b {
+  color: var(--bone);
+}
+
+/* --- dashboard ------------------------------------------------------------ */
+
+.dash-head {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+.chip-preview {
+  font: 700 9.5px/1 var(--mono);
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--ink);
+  background: var(--acid);
+  padding: 6px 9px;
+}
+.dash-cols {
+  display: grid;
+  grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr);
+  gap: 44px;
+  align-items: start;
+  margin-top: 40px;
+}
+@media (max-width: 1080px) {
+  .dash-cols {
+    grid-template-columns: 1fr;
+    gap: 36px;
+  }
+}
+
+/* Bars, not a chart library. A div with a width is a bar chart when the rows
+   are labelled and the scale is one number. */
+.bars {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+.bar-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 8px 14px;
+  align-items: baseline;
+}
+.bar-label {
+  font: 500 12px/1.3 var(--mono);
+  color: var(--bone-80);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.bar-n {
+  font: 700 12px/1 var(--mono);
+  color: var(--bone-45);
+}
+/* Both are spans, so they have to be told to be blocks -- height does not
+   apply to an inline box, and the bar renders as a hairline without this. */
+.bar-track {
+  display: block;
+  grid-column: 1 / -1;
+  height: 6px;
+  background: var(--hair-soft);
+}
+.bar-fill {
+  display: block;
+  height: 100%;
+  background: var(--acid);
+}
+.bar-fill.quiet {
+  background: var(--bone-30);
+}
+
+/* The decision feed reuses the call-row anatomy but is not selectable --
+   these are rows in a log, not a control. */
+.feed-row {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 13px 0;
+  border-bottom: 1px solid var(--hair-soft);
+  font-size: 13px;
+}
+.feed-row:last-child {
+  border-bottom: 0;
+}
+.feed-verdict {
+  font: 700 9.5px/1 var(--mono);
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  padding: 5px 8px;
+  flex: none;
+  width: 66px;
+  text-align: center;
+}
+.feed-verdict.block {
+  background: var(--acid);
+  color: var(--ink);
+}
+.feed-verdict.hold {
+  border: 1px solid var(--acid-30);
+  color: var(--acid);
+}
+.feed-verdict.allow {
+  border: 1px solid var(--hair);
+  color: var(--bone-45);
+}
+.feed-tool {
+  font: 500 12.5px/1 var(--mono);
+  color: var(--bone);
+  flex: none;
+}
+.feed-dest {
+  font: 500 12px/1 var(--mono);
+  color: var(--bone-45);
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.feed-time {
+  font: 500 11px/1 var(--mono);
+  color: var(--bone-30);
+  flex: none;
+}
+@media (max-width: 720px) {
+  .feed-dest {
+    display: none;
+  }
+}
+
+/* --- sandbox shell -------------------------------------------------------- */
+
+.source-bar {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  flex-wrap: wrap;
+  padding-bottom: 22px;
+  border-bottom: 1px solid var(--hair);
+}
+
+.drawer {
+  border-top: 1px solid var(--hair);
+  margin-top: 56px;
+}
+.drawer-toggle {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  background: none;
+  border: 0;
+  padding: 20px 0;
+  cursor: pointer;
+  color: var(--bone-60);
+  font: 700 10.5px/1 var(--mono);
+  letter-spacing: 0.24em;
+  text-transform: uppercase;
+}
+.drawer-toggle:hover {
+  color: var(--bone);
+}
+.drawer-toggle .caret {
+  color: var(--acid);
+}
+.drawer-body {
+  padding-bottom: 32px;
+}
+
+/* --- responsive ----------------------------------------------------------- */
+
+@media (max-width: 720px) {
+  /* The nav wrapped onto three rows and pushed the hero off the fold. Let the
+     tabs scroll sideways instead: four labels on one line beats four lines. */
+  .topbar {
+    gap: 12px;
+  }
+  .tabs {
+    order: 3;
+    width: 100%;
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+  }
+  .tabs::-webkit-scrollbar {
+    display: none;
+  }
+  .tab {
+    margin-right: 20px;
+    padding: 4px 0;
+    white-space: nowrap;
+  }
+  .topbar-right {
+    gap: 14px;
+  }
+  .lede-hero {
+    padding-top: 36px;
+  }
+  .lede-sub {
+    font-size: 16.5px;
+  }
+  .band {
+    margin-top: 72px;
+  }
+  .lede-actions .btn,
+  .lede-actions .copyline {
+    width: 100%;
+    justify-content: center;
+  }
+}
+
+/* --- diagram vocabulary, extended ----------------------------------------
+   The base .d-* set (d-host, d-wire, d-box, d-box-title, d-box-sub, d-out)
+   is above. These add the pieces the landing artifacts need: plates for
+   "a thing that holds content", a hot fill for the one element that matters,
+   and a dashed trace for an inference rather than a data path.
+   ------------------------------------------------------------------------ */
+
+.d-plate {
+  fill: none;
+  stroke: var(--hair);
+  stroke-width: 1;
+}
+.d-step {
+  fill: var(--bone-30);
+  font: 700 10px/1 var(--mono);
+  letter-spacing: 0.2em;
+}
+.d-sub {
+  fill: var(--bone-45);
+  font: 500 11.5px/1 var(--mono);
+}
+.d-sub.strong {
+  fill: var(--bone-80);
+}
+.d-host.sm {
+  font-size: 13px;
+  fill: var(--bone-80);
+}
+
+/* Lines of body text on a page, drawn rather than set -- the viewer should
+   read these as "an article", not try to read them. */
+.d-ruleline {
+  stroke: var(--hair);
+  stroke-width: 5;
+  stroke-linecap: butt;
+}
+
+.d-hot {
+  fill: var(--acid);
+}
+.d-hot-label {
+  fill: var(--ink);
+  font: 700 11px/1 var(--mono);
+  letter-spacing: 0.06em;
+}
+.d-hot-label.lg {
+  font-size: 15px;
+  letter-spacing: 0.14em;
+}
+
+.d-code {
+  fill: var(--bone-60);
+  font: 500 12.5px/1 var(--mono);
+}
+.d-code.hot {
+  fill: var(--acid);
+}
+
+.d-tip {
+  fill: var(--bone-30);
+}
+.d-wire.dim {
+  stroke: var(--hair);
+}
+
+/* The traced line. Dashed because it is Tracer's inference, not a path the
+   data travelled -- the distinction is the product. */
+.d-trace {
+  fill: none;
+  stroke: var(--acid);
+  stroke-width: 1.5;
+  stroke-dasharray: 4 4;
+}
+.d-trace-label {
+  fill: var(--acid);
+  font: 500 11.5px/1 var(--mono);
+}
+
+.d-verdict {
+  font: 700 10.5px/1 var(--mono);
+  letter-spacing: 0.16em;
+}
+.d-verdict.allow {
+  fill: var(--bone-45);
+}
+.d-verdict.hold {
+  fill: var(--acid);
+}
+
+/* The landing diagrams are wider and denser than the two originals, so they
+   need room to breathe and a horizontal scroll rather than a squeeze on a
+   phone -- a schematic that reflows is a schematic that lies. */
+.diagram.wide {
+  overflow-x: auto;
+  padding: 40px 0;
+}
+.diagram.wide svg {
+  min-width: 720px;
 }

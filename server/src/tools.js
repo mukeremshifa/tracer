@@ -54,7 +54,7 @@ export function extractSecrets(text, source) {
 }
 
 // Span registration and secret bookkeeping live on the run context that
-// @tracer/core hands every tool implementation. See core/src/loop.js.
+// @mukeremshifa/tracer-core hands every tool implementation. See core/src/loop.js.
 
 function spanDigest(spans) {
   return spans

@@ -16,3 +16,6 @@ demo/workspace/public-share/northwind-audit.txt
 # them from web/tools/clips, which is committed. A repo carrying a hundred
 # megabytes of MP4 that one command reproduces is a repo nobody wants to clone.
 media/
+
+# Client permissions for the recorded MCP client run (docs/BRIEF-AGENT-CAPTURE.md).
+.claude/settings.local.json

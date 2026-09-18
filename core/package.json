@@ -1,10 +1,14 @@
 {
-  "name": "@tracer/core",
-  "private": true,
-  "version": "1.0.0",
+  "name": "@mukeremshifa/tracer-core",
+  "private": false,
+  "version": "1.0.1",
   "type": "module",
   "description": "Host-agnostic provenance firewall: analyser, overlap scan, tier policy, plan-then-execute loop.",
   "main": "index.js",
+  "files": [
+    "index.js",
+    "src/"
+  ],
   "exports": {
     ".": "./index.js",
     "./analyser": "./src/analyser/analyse.js",

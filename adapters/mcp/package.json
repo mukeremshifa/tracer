@@ -9,7 +9,7 @@
     "tracer-proxy": "bin/tracer-proxy.mjs"
   },
   "dependencies": {
-    "@tracer/core": "*",
+    "@mukeremshifa/tracer-core": "^1.0.1",
     "@modelcontextprotocol/sdk": "^1.12.0"
   }
 }

@@ -1,9 +1,25 @@
 {
-  "name": "tracer",
-  "private": true,
+  "name": "@mukeremshifa/tracer",
+  "private": false,
   "version": "1.0.0",
   "description": "Tracer - a provenance firewall for AI agents.",
   "type": "module",
+  "files": [
+    "cli/",
+    "adapters/mcp/",
+    "server/src/",
+    "shared/",
+    "scripts/",
+    "demo/client.mcp.json",
+    "demo/drive.mjs",
+    "demo/README.md",
+    "demo/serve.mjs",
+    "demo/site/",
+    "demo/tiers.json",
+    "demo/workspace/",
+    "web/dist/",
+    "README.md"
+  ],
   "workspaces": [
     "core",
     "server",
@@ -36,6 +52,12 @@
     "tracer": "cli/tracer.mjs"
   },
   "dependencies": {
-    "google-auth-library": "^11.1.0"
+    "@modelcontextprotocol/sdk": "^1.12.0",
+    "@mukeremshifa/tracer-core": "^1.0.1",
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.7",
+    "express": "^4.21.2",
+    "google-auth-library": "^11.1.0",
+    "jsdom": "^25.0.1"
   }
 }

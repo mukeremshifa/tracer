@@ -12,7 +12,7 @@ import { writeFileSync, mkdirSync, readdirSync, unlinkSync } from 'node:fs';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { ATTACKS, CHAIN_PAGES, CONTROL_PAGES } from '../shared/attacks.js';
-import { encodeBinary } from '@tracer/core';
+import { encodeBinary } from '@mukeremshifa/tracer-core';
 import { SITE_CSS } from '../shared/site-css.js';
 
 const here = dirname(fileURLToPath(import.meta.url));

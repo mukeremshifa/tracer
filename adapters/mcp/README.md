@@ -11,7 +11,7 @@ agent client  ──►  tracer-proxy  ──►  gmail / fetch / jira / slack /
 You point a client at Tracer instead of at the real servers. Tracer connects to
 them on the client's behalf, republishes their tools as `<server>.<tool>`, and
 puts every call through the same policy engine the sandbox uses
-(`@tracer/core`).
+(`@mukeremshifa/tracer-core`).
 
 ---
 

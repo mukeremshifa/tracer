@@ -99,7 +99,7 @@ export function describeConcealment(span) {
  */
 export function evaluate(call, ctx) {
   const registry = ctx.registry;
-  if (!registry) throw new Error('evaluate() needs ctx.registry — see @tracer/core createRegistry()');
+  if (!registry) throw new Error('evaluate() needs ctx.registry — see @mukeremshifa/tracer-core createRegistry()');
 
   const spec = registry.spec(call.name);
   if (!spec) {
@@ -157,7 +157,9 @@ export function evaluate(call, ctx) {
     );
   }
 
-  const inPlan = ctx.planToolNames().includes(call.name);
+  const inPlan = ctx.planIncludes
+    ? ctx.planIncludes(call.name)
+    : ctx.planToolNames().includes(call.name);
   const dest = registry.destinationOf(call);
 
   // --- degraded mode ---------------------------------------------------------

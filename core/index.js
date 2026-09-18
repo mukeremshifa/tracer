@@ -1,5 +1,5 @@
 // ---------------------------------------------------------------------------
-// @tracer/core — the provenance firewall, with no host attached.
+// @mukeremshifa/tracer-core — the provenance firewall, with no host attached.
 //
 // No Express, no fs, no DOM requirement, no assumption about what a "tool" is.
 // Everything here answers one question:

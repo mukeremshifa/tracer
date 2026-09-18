@@ -74,14 +74,14 @@ sandbox stands for something real.
 
 ## Architecture
 
-**One host-agnostic core, two adapters.** `@tracer/core` is the engine: tiers, the destination rule,
+**One host-agnostic core, two adapters.** `@mukeremshifa/tracer-core` is the engine: tiers, the destination rule,
 the overlap scan, the plan-then-execute loop, the analyser. It knows nothing about Express, about
 mock inboxes, or about what a "tool" is — the host injects tool execution and configures tiers.
 
 ```
                        ┌──────────────────────────┐
   sandbox   ──────────▶│                          │
-  MCP proxy ──────────▶│  @tracer/core            │──▶ decision + provenance chain
+  MCP proxy ──────────▶│  @mukeremshifa/tracer-core │──▶ decision + provenance chain
   extension ──────────▶│  evaluate(call, ctx)     │
                        └──────────────────────────┘
 ```
@@ -414,7 +414,7 @@ rigged.
 ## Repository layout
 
 ```
-core/                    @tracer/core — no Express, no fs, no DOM requirement
+core/                    @mukeremshifa/tracer-core — no Express, no fs, no DOM requirement
   src/registry.js        tier configuration as a schema, not a fixed tool list
   src/policy.js          the policy engine: tiers, the destination rule, decisions
   src/overlap.js         Layer B, normalisation, output-channel scanning

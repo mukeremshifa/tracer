@@ -53,6 +53,25 @@ export function createContext({ goal, registry, protectedMode, host = {} }) {
     planToolNames() {
       return ctx.plan.steps.map((s) => s.tool).filter(Boolean);
     },
+    // Whether a proposed call was named in the frozen plan.
+    //
+    // Exact string equality never matched a real MCP client. A client re-exposes
+    // an upstream tool under its own namespace -- Claude Code turns
+    // `filesystem.read_text_file` into `mcp__tracer__filesystem_read_text_file`,
+    // and Cursor does its own thing -- so the plan the model declares is written
+    // in the client's spelling while the call arrives in the proxy's. The plan
+    // froze before any untrusted content was read, so recognising that a planned
+    // read is that read is not a weakening; it is the plan doing its job. A
+    // write the model never planned still fails to match, and still meets the
+    // destination rule regardless.
+    planIncludes(callName) {
+      const target = toolIdentity(callName); // e.g. "read text file"
+      if (!target) return false;
+      return ctx.plan.steps.some((s) => {
+        const hay = normaliseToolText(s.tool);
+        return hay ? (' ' + hay + ' ').includes(' ' + target + ' ') : false;
+      });
+    },
     // Destinations the plan named, before any untrusted content was read. A
     // recipient that appears here was chosen by the agent while it still had
     // only the user's instruction in front of it, so it is attributable.
@@ -90,6 +109,27 @@ export function createContext({ goal, registry, protectedMode, host = {} }) {
     },
   };
   return ctx;
+}
+
+// A plan step, or a call name, reduced to space-separated lowercase word tokens
+// so two spellings of the same tool compare equal. `filesystem.read_text_file`,
+// `mcp__tracer__filesystem_read_text_file` and the prose "filesystem_read_text_file
+// to read notes.md" all normalise to a string that contains "read text file".
+function normaliseToolText(s) {
+  return String(s || '')
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, ' ')
+    .trim();
+}
+
+// The bare tool identity for a proxy call name (`<server>.<tool>`): the tool
+// segment, tokenised. `filesystem.read_text_file` -> "read text file". The
+// server segment is dropped because a client's namespace prefix replaces it, so
+// matching on the tool alone is what survives the round trip.
+function toolIdentity(callName) {
+  const raw = String(callName || '');
+  const tool = raw.includes('.') ? raw.slice(raw.indexOf('.') + 1) : raw;
+  return normaliseToolText(tool);
 }
 
 function resultDigest(result) {

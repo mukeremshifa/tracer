@@ -23,7 +23,7 @@ import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { JSDOM } from 'jsdom';
 
-import { analyse, createRegistry, createContext, evaluate, scanOutputChannels } from '@tracer/core';
+import { analyse, createRegistry, createContext, evaluate, scanOutputChannels } from '@mukeremshifa/tracer-core';
 import { ATTACKS, goalFor, deliveryGoalFor, USER_MAILBOX } from '../shared/attacks.js';
 
 const here = dirname(fileURLToPath(import.meta.url));
@@ -206,7 +206,7 @@ async function runMcp({ configPath, attacks, out, json }) {
   const { Client } = await import('@modelcontextprotocol/sdk/client/index.js');
   const { StdioClientTransport } = await import('@modelcontextprotocol/sdk/client/stdio.js');
   const { getProvider } = await import('../server/src/providers/index.js');
-  const { run } = await import('@tracer/core');
+  const { run } = await import('@mukeremshifa/tracer-core');
 
   const config = loadTierConfig(configPath);
   log('target: ' + configPath + ' (MCP)');

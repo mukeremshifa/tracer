@@ -1,0 +1,18 @@
+# Generated local evidence and runtime state.
+demo/*.db
+demo/*.db-*
+demo/evidence/
+tracer-decisions.db
+*.db-shm
+*.db-wal
+
+# Source-only workspace material is not part of the published CLI.
+web/src/
+web/public/
+media/
+tools/
+docs/
+HANDOFF.md
+HANDOFF-UI.md
+DISCLOSURE.md
+SCORECARD.md

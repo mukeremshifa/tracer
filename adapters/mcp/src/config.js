@@ -11,7 +11,7 @@
 import { readFileSync } from 'node:fs';
 import { dirname, resolve, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { createRegistry } from '@tracer/core';
+import { createRegistry } from '@mukeremshifa/tracer-core';
 
 const here = dirname(fileURLToPath(import.meta.url));
 
@@ -85,7 +85,7 @@ export function normaliseTierConfig(raw, source = '(inline)', configDir = null) 
 
 /**
  * @param {object} config  from loadTierConfig()
- * @returns a @tracer/core registry
+ * @returns an @mukeremshifa/tracer-core registry
  */
 export function createProxyRegistry(config) {
   return createRegistry({

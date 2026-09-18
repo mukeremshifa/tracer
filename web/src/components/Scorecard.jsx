@@ -52,33 +52,27 @@ export function Scorecard({ go }) {
         <div className="notice info small">
           This scorecard is for the built-in sandbox agent, which is the zero-config default target. The
           same sixteen classes can be pointed at your agent instead &mdash;{' '}
-          <span className="mono">npx tracer test --target ./mcp.json</span> or{' '}
+          <span className="mono">npx @mukeremshifa/tracer test --target ./mcp.json</span> or{' '}
           <span className="mono">--target https://your-agent/</span> &mdash; and it emits a scorecard for
           that agent.
           {go && (
             <>
               {' '}
-              <button className="btn sm ghost" onClick={() => go('proxy')}>
+              <button className="btn sm ghost" onClick={() => go('home')}>
                 put Tracer in front of it
               </button>
             </>
           )}
         </div>
-        <div className="claim">
-          Tracer converts an invisible, unattributable compromise into a visible, attributable one, and
-          structurally blocks the exfiltration class of consequences regardless of whether the model was
-          fooled.
-        </div>
-        <p className="lede" style={{ marginTop: 14 }}>
-          Note what is <i>not</i> claimed: that the model is not fooled. In every row below where the
-          unprotected agent was robbed, the model was fooled in the protected run too. The difference is
-          that the consequence did not land.
+        <p className="small muted" style={{ marginTop: 16 }}>
+          In every row below where the unprotected agent was robbed, the model was fooled in the
+          protected run too. The difference is that the consequence did not land.
         </p>
       </div>
 
       <div className="panel">
         <div className="panel-head">
-          <span className="panel-title">Two scenarios, because one of them would flatter us</span>
+          <span className="panel-title">Two scenarios</span>
         </div>
         <div className="panel-body table-wrap">
           <table className="grid">
@@ -128,7 +122,7 @@ export function Scorecard({ go }) {
             tool, so the plan freeze alone refuses any attempt to send anything anywhere &mdash; which in that
             scenario amounts to an allow-list of tool names. In the second scenario the user legitimately asks
             for the summary to be emailed, so <span className="mono">send_email</span> is on the plan, the plan
-            freeze cannot fire, and the destination rule has to do the work. Judge us on the second column.
+            freeze cannot fire, and the destination rule has to do the work. The second column is the one that matters.
           </div>
         </div>
       </div>
@@ -205,7 +199,7 @@ export function Scorecard({ go }) {
 
       <div className="panel">
         <div className="panel-head">
-          <span className="panel-title">Control &mdash; does it cry wolf?</span>
+          <span className="panel-title">The control page</span>
         </div>
         <div className="panel-body">
           <div className="row" style={{ gap: 18 }}>

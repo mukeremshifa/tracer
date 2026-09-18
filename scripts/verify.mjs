@@ -29,7 +29,7 @@ import {
   destinationForms,
   scanOutputChannels,
   decodedForms,
-} from '@tracer/core';
+} from '@mukeremshifa/tracer-core';
 import { ATTACKS, MCP_ATTACKS, SOURCES, CHAIN_PAGES, CONTROL_PAGES, deliveryGoalFor, goalFor, attackById } from '../shared/attacks.js';
 import { run } from '../server/src/loop.js';
 import { getProvider } from '../server/src/providers/index.js';
@@ -304,6 +304,21 @@ const proxyAllow = proxySession.evaluate({
 check('the email the user actually asked for still goes',
   proxyAllow.decision === 'allow',
   proxyAllow.decision + '/' + proxyAllow.rule);
+
+// A real client renames an upstream tool under its own namespace, so the plan
+// the model declares is spelled differently from the call that arrives. The
+// frozen plan has to match across that gap, or every planned read is held as
+// off-plan in every client that namespaces (all of them).
+const nsSession = new ProxySession({ registry: mcpRegistry, isUntrusted: () => true });
+nsSession.beginTask({
+  goal: 'Read ticket PROJ-42 and email me the summary.',
+  plan: ['mcp__tracer__jira_get_issue', 'gmail_send_email'],
+});
+check('a plan declared in the client’s namespaced spelling still matches the call',
+  nsSession.evaluate({ name: 'jira.get_issue', arguments: { issue: 'PROJ-42' } }).rule === 'tier-1-in-plan',
+  nsSession.evaluate({ name: 'jira.get_issue', arguments: { issue: 'PROJ-42' } }).rule);
+check('and a tool the plan never named is still not in it',
+  nsSession.evaluate({ name: 'jira.delete_issue', arguments: { issue: 'PROJ-42' } }).rule !== 'tier-1-in-plan');
 
 check('no visibility analysis is claimed where there is no renderer',
   proxySession.ctx.spans.every((x) => x.visible === null));

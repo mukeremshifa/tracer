@@ -1,7 +1,7 @@
 // ---------------------------------------------------------------------------
 // The sandbox's host adapter.
 //
-// The loop itself lives in @tracer/core and knows nothing about mock inboxes or
+// The loop itself lives in @mukeremshifa/tracer-core and knows nothing about mock inboxes or
 // the local range. This file is the thin layer that hands it three things: the
 // sandbox's tier configuration, the sandbox's tool implementations, and the
 // system prompt that names them.
@@ -10,12 +10,12 @@
 // it is: that is the argument for the extraction.
 // ---------------------------------------------------------------------------
 
-import { run as coreRun } from '@tracer/core';
+import { run as coreRun } from '@mukeremshifa/tracer-core';
 import { registry } from './registry.js';
 import { execute, normaliseRangePath } from './tools.js';
 import { systemPrompt } from './prompts.js';
 
-export { MAX_STEPS } from '@tracer/core';
+export { MAX_STEPS } from '@mukeremshifa/tracer-core';
 
 /**
  * @param {object} o

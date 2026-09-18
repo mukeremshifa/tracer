@@ -9,6 +9,13 @@ Two kinds of clip, and the ratio matters:
 DevTools Protocol: real clicks, the real agent loop, the real X-ray. Regenerate
 with `node scripts/capture-product.mjs`. If the UI changes, so does the footage.
 
+One product clip is captured differently. `product-client.mp4` is Tracer inside
+a real MCP client (Claude Code over `claude -p`), and it is rendered from a
+captured session (the real proxy banner, the real tool calls, the real refusal)
+by `node scripts/capture-client.mjs`. The exchange is cached in
+`web/tools/clips/client-session.json`; `--live` re-captures it. It is the same
+argument the Viewer makes, made in a tool the judge already uses.
+
 **Cards** (everything else) are rendered typography, built by
 `node scripts/render-clips.mjs`. They carry numbers and the two lines the video
 has to say out loud. They are connective tissue between product beats, never the
@@ -32,11 +39,17 @@ deck of statistics is a case study, and this is a product.
 | 7 | `product-viewer.mp4` (from ~10s) | 17s | The divergence. Left: allowed, then DATA LEFT. Right: read_email HELD, send_email BLOCKED on `destination-originates-from-page`, and the user's own email still goes out. |
 | 8 | `product-arena.mp4` | 18.6s | Somebody else's injection, planted and run live. The counters move. PREVENTED. |
 | 9 | `product-proxy.mp4` | 12.2s | The integration surface: tier table, then the real refusal from two real MCP servers. |
-| 10 | `stats-04-gap.mp4` | 7.0s | 83% deploying agentic AI, 29% ready to secure it. |
-| 11 | `closing.mp4` | 8.0s | 16/16, 0, 14/16, and the link. |
+| 10 | `product-client.mp4` | 16.1s | Tracer inside a real MCP client. The firewall boots its tier table, the agent reads the notes and fetches the page, then the write to the page's path is **BLOCKED** on `destination-originates-from-page`, and the refusal arrives as the model's own error, provenance chain and all. |
+| 11 | `stats-04-gap.mp4` | 7.0s | 83% deploying agentic AI, 29% ready to secure it. |
+| 12 | `closing.mp4` | 8.0s | 16/16, 0, 14/16, and the link. |
 
-That is about 108 seconds of picture. At 3:30 you have room to hold on beat 7,
-which is the one that has to land.
+That is about 124 seconds of picture. At 3:30 you have room to hold on beat 7,
+which is the one that has to land, and on the refusal in beat 10.
+
+Beats 9 and 10 are two readings of the same claim: the proxy page states the
+integration, the client scene shows it happening in a tool the viewer
+recognises. If the cut runs long, beat 10 is the stronger of the two and can
+stand alone.
 
 `product-viewer.mp4` is one 27 second take, used twice. Cut it at roughly 10
 seconds, run the cards, then come back to it. The pause reads as deliberate,
@@ -92,3 +105,15 @@ node scripts/capture-product.mjs xray
 Capture runs at whatever rate the protocol sustains, usually 13 to 17fps, and the
 encoder is told the measured rate so playback speed matches real time. The clips
 are build artifacts; `media/` is gitignored and the sources are committed.
+
+The client scene renders from its cached session and needs no server:
+
+```
+node scripts/capture-client.mjs             # render product-client.mp4 from cache
+node scripts/capture-client.mjs --live      # re-capture the exchange, then render
+```
+
+`--live` needs Claude Code auth, `uvx` and `npx` on PATH, and the demo range up
+(`node demo/serve.mjs`). It drives Claude Code through Tracer against the two
+real MCP servers and re-records the whole exchange; the render is deterministic
+either way at a fixed 30fps.

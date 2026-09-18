@@ -1,0 +1,85 @@
+<!doctype html><html><head><meta charset="utf-8">
+<style>
+@font-face{font-family:'JB';src:url('/assets/jetbrains-mono-latin-500-normal-CJOVTJB7.woff') format('woff');font-weight:500;font-display:block}
+@font-face{font-family:'JB';src:url('/assets/jetbrains-mono-latin-700-normal-D3wTyLJW.woff') format('woff');font-weight:700;font-display:block}
+*{margin:0;padding:0;box-sizing:border-box}
+html,body{width:1920px;height:1080px;overflow:hidden;background:#0b0c0e}
+/* window chrome */
+.chrome{height:52px;display:flex;align-items:center;gap:10px;padding:0 24px;
+  background:#15171b;border-bottom:1px solid rgba(244,245,240,.08)}
+.dot{width:13px;height:13px;border-radius:50%;background:rgba(244,245,240,.20)}
+.title{margin-left:16px;font:500 16px/1 'JB',monospace;color:rgba(244,245,240,.55)}
+.badge{margin-left:auto;display:flex;align-items:center;gap:9px;
+  font:700 14px/1 'JB',monospace;color:#0b0c0e;background:#cdfb41;
+  padding:8px 13px;border-radius:7px;letter-spacing:.02em}
+.badge .g{width:9px;height:9px;border-radius:50%;background:#0b0c0e}
+#term{padding:30px 40px;font:500 23px/1.5 'JB',monospace;color:#d8dad2;
+  white-space:pre-wrap;word-break:break-word;height:calc(1080px - 52px);overflow:hidden}
+/* palette */
+.head{color:#f4f5f0;font-weight:700}
+.ok{color:#9fe7a0}
+.boot{color:#8a8f83}
+.dim{color:#75786c}
+.tier{color:#c4c8bc}
+.t0{color:#7fdfff;font-weight:700}.t1{color:#ffd479;font-weight:700}.t2{color:#ff6b5e;font-weight:700}
+.rule{color:#4a4d44;font-weight:700}
+.you{color:#cdfb41;font-weight:700}
+.prompt{color:#eef0e8}
+.tool{color:#e4e6dc;font-weight:700}
+.arrow{color:#7fdfff;font-weight:700}
+.arg{color:#9aa08e}
+.chip-allow{color:#0b0c0e;background:#9fe7a0;font-weight:700;border-radius:5px}
+.chip-block{color:#0b0c0e;background:#ff6b5e;font-weight:700;border-radius:5px}
+.rule-block{color:#ff8f85;font-weight:700}
+.bar{color:#ff6b5e;font-weight:700}
+.refuse{color:#ffb3ac}
+.refuse-head{color:#ff6b5e;font-weight:700}
+.model{color:#cdd0c6}
+.cursor{background:#cdfb41;color:#0b0c0e}
+</style></head>
+<body>
+<div class="chrome"><i class="dot"></i><i class="dot"></i><i class="dot"></i>
+  <span class="title">Claude Code · MCP client</span>
+  <span class="badge"><i class="g"></i>tracer · provenance firewall</span></div>
+<pre id="term"></pre>
+<script type="module">
+import { buildItems, revealed, CPF } from '/clips/client-lines.mjs';
+
+const q = new URLSearchParams(location.search);
+const F = Number(q.get('f') || 0);
+
+const session = await fetch('/clips/client-session.json').then((r) => r.json());
+const items = buildItems(session);
+const lines = revealed(items, F);
+
+const esc = (t) => t.replace(/&/g, '&amp;').replace(/</g, '&lt;');
+function renderLine(l) {
+  let html = '';
+  for (const s of l.spans) {
+    const chip = s.cls === 'chip-allow' || s.cls === 'chip-block';
+    const txt = esc(s.text);
+    html += s.cls ? '<span class="' + s.cls + '">' + txt + '</span>' : txt;
+  }
+  if (l.typing) html += '<span class="cursor"> </span>';
+  return html;
+}
+
+// Scroll by dropping whole lines off the top. The type is monospace at a known
+// size, so how many rows fit and how many rows a line wraps to are both
+// arithmetic -- no dependence on layout having settled under the time budget.
+const LINE_PX = 23 * 1.5;
+const ROWS = Math.floor((1080 - 52 - 60) / LINE_PX);
+const COLS = Math.floor((1920 - 80) / (23 * 0.6));
+const rowsOfText = (l) => {
+  const len = l.spans.reduce((n, s) => n + s.text.length, 0) || 1;
+  return Math.max(1, Math.ceil(len / COLS));
+};
+
+let rows = 0, from = lines.length;
+while (from > 0 && rows + rowsOfText(lines[from - 1]) <= ROWS) {
+  from -= 1;
+  rows += rowsOfText(lines[from]);
+}
+
+document.getElementById('term').innerHTML = lines.slice(from).map(renderLine).join('\n');
+</script></body></html>

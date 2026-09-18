@@ -9,7 +9,7 @@
 // ---------------------------------------------------------------------------
 
 import { forwardRef, useCallback, useEffect, useImperativeHandle, useRef, useState } from 'react';
-import { analyse } from '@tracer/core';
+import { analyse } from '@mukeremshifa/tracer-core';
 import { applyXray, injectXrayStyle } from '@shared/xray.js';
 
 export const PageFrame = forwardRef(function PageFrame(

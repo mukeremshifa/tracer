@@ -47,11 +47,17 @@ if (!raw.trim()) { console.error('no output from tracer prove'); process.exit(1)
 // The command prints absolute paths from this machine. Keep the shape, drop the
 // part that is only true here.
 // Absolute paths from this machine become a repo-relative stand-in. The shape
-// of the output is the point; the directory layout is not. Both slash
-// conventions appear, because the run spans Node and a Windows shell, and a
-// plain split/join avoids having to escape either of them into a regexp.
-const winRepo = REPO.replace(/\//g, '\\');
-const scrub = (l) => l.split(REPO).join('.').split(winRepo).join('.');
+// of the output is the point; the directory layout is not.
+//
+// The repo root shows up in three spellings across one run: forward slashes
+// from Node, backslashes from the Windows shell, and doubled backslashes where
+// a path has been through JSON. Scrubbing only one of them, which an earlier
+// version did, leaves the other two on screen.
+const posixRepo = REPO.replace(/\\/g, '/');
+const winRepo = posixRepo.replace(/\//g, '\\');
+const jsonRepo = posixRepo.replace(/\//g, '\\\\');
+const scrub = (l) =>
+  [jsonRepo, winRepo, posixRepo].reduce((acc, form) => acc.split(form).join('.'), l);
 
 const lines = ['$ npx tracer prove', ''].concat(
   raw.replace(/\r/g, '').split('\n').map(scrub),

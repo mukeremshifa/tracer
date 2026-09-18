@@ -1341,6 +1341,14 @@ h3.caveat-title {
   overflow-x: auto;
   tab-size: 2;
 }
+/* Machine output that is really prose: a refusal, a provenance chain. It is
+   meant to be read, and a sentence running off the right edge reads as
+   truncation even when the block scrolls. */
+.code-body.wrap {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  overflow-x: visible;
+}
 
 /* --- honest two-column split --------------------------------------------- */
 
@@ -1483,4 +1491,38 @@ h1.viewer-title {
 .btn.primary-xray .xray-icon {
   font-size: 13px;
   line-height: 1;
+}
+
+/* --- captured artifacts --------------------------------------------------
+   Screenshots of the extension's X-ray on real range pages. A page that
+   describes a visual mechanism without showing it is asking to be taken on
+   trust, which is the one thing this project refuses to ask for.
+
+   The bone frame matters: these are pictures of a bright, paper-like untrusted
+   page sitting inside an ink UI, and without a border the white would bleed
+   into the panel and read as a rendering bug.
+------------------------------------------------------------------------- */
+.shot {
+  margin: 0;
+  display: block;
+}
+.shot img {
+  display: block;
+  width: 100%;
+  height: auto;
+  border: 1px solid var(--hair);
+  background: var(--bone);
+}
+.shot figcaption {
+  margin-top: 10px;
+}
+.shot-pair {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 18px;
+}
+@media (max-width: 900px) {
+  .shot-pair {
+    grid-template-columns: 1fr;
+  }
 }

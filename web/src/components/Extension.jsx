@@ -33,40 +33,85 @@ export function Extension({ go }) {
       </div>
 
       {/*
-        The one thing this page still owes the reader is a picture of the X-ray
-        lighting up spans in a real page, in a real browser, under the real
-        extension. It is not here yet, and the honest move is to say which artifact
-        is missing and how to make it rather than to describe it as though it
-        existed. The same analyser runs live in the Viewer, one click away.
+        The X-ray, shown rather than described. Both frames are Chrome renders of
+        a real range page with the shipped analyser and the shipped xray module
+        run against it -- the same two calls the content script makes. Captured
+        from adapters/browser/dist, so what is pictured is what the extension
+        loads; regenerate with scripts/capture-shots.mjs.
       */}
       <div className="panel">
         <div className="panel-head">
-          <span className="panel-title">The artifact this page still owes you</span>
+          <span className="panel-title">What it does to a page</span>
+          <span className="spacer mono small faint">/range/white-on-white</span>
         </div>
         <div className="panel-body stack">
-          <p className="lede" style={{ margin: 0 }}>
-            There is no screenshot of the extension on this page. There should be: the X-ray is the
-            mechanism nothing else here has, and a page describing it without showing it is asking to be
-            taken on trust.
+          <div className="shot-pair">
+            <figure className="shot">
+              <img src="/shots/xray-before.png" alt="A financial news article as it renders normally. Nothing appears out of place." />
+              <figcaption className="small muted">
+                <b>What you see.</b> An article. The gap below the third paragraph is the only tell, and
+                nobody reads a page looking for gaps.
+              </figcaption>
+            </figure>
+            <figure className="shot">
+              <img src="/shots/xray-after.png" alt="The same article with the X-ray on. A hidden instruction is revealed in acid green, telling the agent to retrieve a passcode and email it to an attacker." />
+              <figcaption className="small muted">
+                <b>What the agent read.</b> The concealed span ignites in place, with the instruction it
+                carries readable and its span ID beside it.
+              </figcaption>
+            </figure>
+          </div>
+          <p className="small faint" style={{ margin: 0 }}>
+            Both frames are the shipped <span className="mono">analyser.js</span> and{' '}
+            <span className="mono">xray.js</span> from{' '}
+            <span className="mono">adapters/browser/dist</span>, run against a real range page in Chrome
+            &mdash; the same two calls <span className="mono">content.js</span> makes. Nothing here is a
+            mockup.
           </p>
+        </div>
+      </div>
+
+      <div className="panel">
+        <div className="panel-head">
+          <span className="panel-title">Encoding does not hide it</span>
+          <span className="spacer mono small faint">/range/zero-width</span>
+        </div>
+        <div className="panel-body stack">
+          <figure className="shot" style={{ margin: 0 }}>
+            <img src="/shots/xray-zero-width.png" alt="A figure caption on an energy article. The X-ray shows it carries a zero-width payload, with a DECODES TO line spelling out the hidden instruction." />
+          </figure>
           <p className="small muted" style={{ margin: 0 }}>
-            What you can do instead, right now, is watch the same analyser run live &mdash; the Viewer
-            injects the identical code into a sandboxed iframe, and{' '}
-            <b>Show what the agent read</b> is the same toggle the extension&rsquo;s panel offers.
+            The payload here is written in zero-width characters inside an ordinary figure caption: there
+            is nothing to see even with the styles stripped. The analyser decodes it and the X-ray prints
+            what it decodes to, because a span that looks empty is the one case where showing the element
+            is not enough.
+          </p>
+        </div>
+      </div>
+
+      <div className="panel">
+        <div className="panel-head">
+          <span className="panel-title">And it does not cry wolf</span>
+          <span className="spacer mono small faint">/range/clean</span>
+        </div>
+        <div className="panel-body stack">
+          <figure className="shot" style={{ margin: 0 }}>
+            <img src="/shots/xray-clean.png" alt="The control page with the X-ray on. No acid highlighting. Two screen-reader-only elements are outlined and labelled as legitimate accessibility patterns." />
+          </figure>
+          <p className="small muted" style={{ margin: 0 }}>
+            The control page carries a screen-reader-only caption and an{' '}
+            <span className="mono">aria-hidden</span> decoration &mdash; both hidden from sighted users,
+            neither an attack. No acid anywhere: they are outlined and named as accessibility patterns.
+            Getting this wrong would mean shipping a security tool that penalises supporting screen
+            readers.
           </p>
           {go && (
             <div className="row">
               <button className="btn" onClick={() => go('sandbox')}>
-                See the X-ray in the Viewer
+                Run the same analyser live in the Viewer
               </button>
             </div>
           )}
-          <p className="small faint" style={{ margin: 0 }}>
-            To capture it from the extension itself: build and load it with the two lines below, open any
-            page on the range (<span className="mono">/range/white-on-white</span> is the canonical one),
-            click the toolbar icon and press the reveal control. The concealed span is highlighted in
-            place, on the page, with the decoded text beside it.
-          </p>
         </div>
       </div>
 

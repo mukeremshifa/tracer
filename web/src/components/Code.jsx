@@ -7,7 +7,12 @@
 
 import { useState } from 'react';
 
-export function Code({ children, label, lang = 'sh', maxHeight }) {
+// `wrap` is for prose that happens to arrive as machine output -- a refusal
+// message, a provenance chain. Those are meant to be read, and a long line
+// disappearing off the right edge reads as truncation even though the block
+// scrolls. Tables and banners keep the default: wrapping a column layout
+// destroys it.
+export function Code({ children, label, lang = 'sh', maxHeight, wrap = false }) {
   const [copied, setCopied] = useState(false);
   const text = typeof children === 'string' ? children : String(children ?? '');
 
@@ -31,7 +36,10 @@ export function Code({ children, label, lang = 'sh', maxHeight }) {
           {copied ? 'copied' : 'copy'}
         </button>
       </div>
-      <pre className="code-body" style={maxHeight ? { maxHeight, overflow: 'auto' } : undefined}>
+      <pre
+        className={'code-body' + (wrap ? ' wrap' : '')}
+        style={maxHeight ? { maxHeight, overflow: 'auto' } : undefined}
+      >
         {text}
       </pre>
     </div>

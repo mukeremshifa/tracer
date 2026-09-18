@@ -11,6 +11,13 @@ const TRANSCRIPTS = join(DATA, 'transcripts');
 const ARENA = join(DATA, 'arena');
 const SCOREBOARD = join(DATA, 'scoreboard.json');
 
+// Committed seed: real Arena runs, checked in so a fresh deploy is not empty.
+// Read-only -- nothing ever writes here, and the live board takes over as soon
+// as it has a single entry.
+const SEED = join(DATA, 'seed');
+const SEED_ARENA = join(SEED, 'arena');
+const SEED_SCOREBOARD = join(SEED, 'scoreboard.json');
+
 for (const dir of [DATA, TRANSCRIPTS, ARENA]) mkdirSync(dir, { recursive: true });
 
 function writeAtomic(path, value) {
@@ -70,16 +77,31 @@ export function saveArenaPage(page) {
 export function loadArenaPage(id) {
   const safe = String(id).replace(/[^\w-]/g, '');
   const path = join(ARENA, safe + '.json');
-  return existsSync(path) ? readJson(path, null) : null;
+  if (existsSync(path)) return readJson(path, null);
+  // Fall back to the committed seed, so the pages the seeded scoreboard rows
+  // point at still resolve on a deploy that has never taken a submission.
+  const seeded = join(SEED_ARENA, safe + '.json');
+  return existsSync(seeded) ? readJson(seeded, null) : null;
 }
 
 // --- scoreboard --------------------------------------------------------------
 
 const EMPTY_BOARD = { attempts: 0, bypasses: 0, blocked: 0, clean: 0, entries: [] };
 
+/**
+ * Runtime submissions are not committed -- they are user-generated state, and a
+ * repo that ships them invites the question of who actually wrote them. But a
+ * fresh deploy with an empty Arena reads as a feature nobody used, which is a
+ * worse misrepresentation than none. So a committed seed of real runs stands in
+ * until the first live submission, and the moment one lands the live board wins.
+ */
 export function readScoreboard() {
-  const board = readJson(SCOREBOARD, EMPTY_BOARD);
-  return { ...EMPTY_BOARD, ...board, entries: board.entries || [] };
+  const board = readJson(SCOREBOARD, null);
+  if (board && (board.entries || []).length) {
+    return { ...EMPTY_BOARD, ...board, entries: board.entries };
+  }
+  const seed = readJson(SEED_SCOREBOARD, EMPTY_BOARD);
+  return { ...EMPTY_BOARD, ...seed, entries: seed.entries || [] };
 }
 
 /**

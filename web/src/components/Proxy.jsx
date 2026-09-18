@@ -412,7 +412,7 @@ function Evidence({ evidence }) {
           <div className="small" style={{ marginBottom: 6 }}>
             <b>The refusal, as it arrived in the client.</b> The upstream server was never called.
           </div>
-          <Code label="mcp error">{p.refusal}</Code>
+          <Code label="mcp error" wrap>{p.refusal}</Code>
         </div>
 
         <div className="small muted">

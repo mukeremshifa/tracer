@@ -1,0 +1,44 @@
+<!doctype html><html><head><meta charset="utf-8">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<style>
+@font-face{font-family:'SG';src:url('http://localhost:8787/assets/space-grotesk-latin-700-normal-CwsQ-cCU.woff') format('woff');font-weight:700}
+@font-face{font-family:'SG';src:url('http://localhost:8787/assets/space-grotesk-latin-500-normal-CNSSEhBt.woff') format('woff');font-weight:500}
+@font-face{font-family:'JB';src:url('http://localhost:8787/assets/jetbrains-mono-latin-700-normal-D3wTyLJW.woff') format('woff');font-weight:700}
+@font-face{font-family:'JB';src:url('http://localhost:8787/assets/jetbrains-mono-latin-500-normal-CJOVTJB7.woff') format('woff');font-weight:500}
+*{margin:0;padding:0;box-sizing:border-box;border-radius:0}
+body{width:1200px;height:630px;background:#131313;color:#f4f5f0;
+ font:500 14px/1.65 'SG',sans-serif;overflow:hidden;position:relative}
+.frame{position:absolute;inset:56px 64px;display:flex;flex-direction:column;justify-content:space-between}
+.top{display:flex;align-items:center;gap:16px}
+.mark{width:46px;height:46px;background:#131313;flex:none}
+.word{font:700 25px/1 'SG',sans-serif;letter-spacing:-.02em}
+.tag{font:700 10.5px/1 'JB',monospace;letter-spacing:.24em;text-transform:uppercase;
+ color:#131313;background:#cdfb41;padding:7px 11px;margin-left:6px}
+h1{font:700 62px/1.04 'SG',sans-serif;letter-spacing:-.033em;max-width:17ch}
+h1 em{font-style:normal;color:#cdfb41}
+.rule{height:1px;background:rgba(244,245,240,.12);margin:26px 0 22px}
+.stats{display:flex;gap:56px}
+.s .n{font:700 40px/1 'JB',monospace;color:#cdfb41;letter-spacing:-.02em}
+.s .l{font:500 12px/1.45 'SG',sans-serif;color:rgba(244,245,240,.6);margin-top:9px;max-width:21ch}
+.foot{position:absolute;right:0;bottom:0;font:500 12.5px/1 'JB',monospace;color:rgba(244,245,240,.45)}
+.bar{position:absolute;left:0;top:0;bottom:0;width:8px;background:#cdfb41}
+</style></head><body>
+<div class="bar"></div>
+<div class="frame">
+  <div class="top">
+    <svg class="mark" viewBox="0 0 32 32"><rect width="32" height="32" fill="#cdfb41"/>
+      <path d="M4 21h5l3-12 3.5 18L19 15l2 3h7" stroke="#131313" stroke-width="2.6" fill="none"/></svg>
+    <span class="word">Tracer</span>
+    <span class="tag">Provenance firewall</span>
+  </div>
+  <div>
+    <h1>The injection <em>works.</em><br>The theft <em>doesn't.</em></h1>
+    <div class="rule"></div>
+    <div class="stats">
+      <div class="s"><div class="n">16/16</div><div class="l">attacks robbed an unprotected agent</div></div>
+      <div class="s"><div class="n">0</div><div class="l">exfiltrations landed through Tracer</div></div>
+      <div class="s"><div class="n">14/16</div><div class="l">user's real task still completed</div></div>
+    </div>
+    <div class="foot">tracer &mdash; for AI agents</div>
+  </div>
+</div></body></html>

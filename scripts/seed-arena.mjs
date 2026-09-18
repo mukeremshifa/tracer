@@ -140,7 +140,12 @@ function startChrome(url) {
     child,
     stop() {
       try { child.kill('SIGKILL'); } catch { /* already gone */ }
-      rmSync(profile, { recursive: true, force: true });
+      // Chrome does not release its profile lock the instant it is killed, and
+      // on Windows the delete then fails with EPERM. The profile is in the OS
+      // temp dir, so leaving it behind is harmless -- losing the run is not.
+      setTimeout(() => {
+        try { rmSync(profile, { recursive: true, force: true }); } catch { /* the OS will */ }
+      }, 2000).unref();
     },
   };
 }
@@ -248,19 +253,25 @@ for (const sub of SUBMISSIONS) {
     });
     currentPath = page.path;
 
-    const session = startChrome(`http://127.0.0.1:${HARNESS_PORT}/`);
-    const analysed = await new Promise((resolve) => {
-      let settled = false;
-      const finish = (v) => {
+    // Arm the handler BEFORE Chrome starts. A fast browser can POST its spans
+    // back before this line would otherwise run, and the result is a silent
+    // 45-second wait for a message that already arrived.
+    let settled = false;
+    let finish;
+    const analysedPromise = new Promise((resolve) => {
+      finish = (v) => {
         if (settled) return;
         settled = true;
-        clearTimeout(bail);
-        session.stop();
         resolve(v);
       };
-      const bail = setTimeout(() => finish(null), 45000);
       deliver = finish;
     });
+
+    const session = startChrome(`http://127.0.0.1:${HARNESS_PORT}/`);
+    const bail = setTimeout(() => finish(null), 45000);
+    const analysed = await analysedPromise;
+    clearTimeout(bail);
+    session.stop();
     deliver = null;
 
     if (analysed && analysed.error) {

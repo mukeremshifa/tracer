@@ -149,14 +149,76 @@ export function instructionScore(text) {
 
 const BLOCK_TAGS = new Set(['SCRIPT', 'STYLE', 'NOSCRIPT', 'TEMPLATE', 'TITLE']);
 
+// --- text-only analysis ------------------------------------------------------
+// Outside a browser there is no rendering engine, and without one the question
+// "could a human have seen this?" has no answer. An MCP proxy sees a JSON blob
+// from a Jira ticket, not a laid-out page.
+//
+// So the DOM-free path is deliberately smaller, and says so. Zero-width and
+// encoded payloads survive intact (they are properties of the bytes, not of the
+// layout); every visibility flag is simply absent. `visibilityAware: false`
+// rides along on the report so a host can never claim the X-ray ran when it
+// did not.
+
 /**
- * @param {Document} doc
+ * @param {string} text
+ * @param {{ url?: string, startIndex?: number, origin?: string, flags?: string[] }} opts
+ */
+export function analyseText(text, opts = {}) {
+  const url = opts.url || 'unknown';
+  const spans = [];
+  let i = opts.startIndex || 0;
+
+  const paragraphs = String(text || '')
+    .split(/\n{2,}|\r\n{2,}/)
+    .map((p) => p.trim())
+    .filter(Boolean);
+
+  for (const raw of paragraphs) {
+    const zw = decodeZeroWidth(raw);
+    const body = stripZeroWidth(raw).replace(/[ \t]+/g, ' ').trim();
+    if (!body && !zw) continue;
+
+    const flags = [...(opts.flags || [])];
+    if (ZW_CLASS.test(raw)) flags.push('zero-width-chars');
+
+    const info = instructionScore(zw ? body + ' ' + zw.decoded : body);
+    spans.push({
+      id: 'S' + ++i,
+      url,
+      trust: 'untrusted',
+      text: body || '(' + zw.count + ' zero-width characters)',
+      decoded: zw ? zw.decoded : null,
+      decodedKind: zw ? zw.kind : null,
+      flags,
+      // No renderer ran, so visibility is unknown rather than true. The spans
+      // are still fully attributable, which is what the policy engine needs.
+      visible: null,
+      concealed: flags.includes('zero-width-chars'),
+      accessibility: null,
+      path: null,
+      origin: opts.origin || 'text',
+      style: null,
+      ...info,
+    });
+  }
+
+  return { url, spans, report: stripReport(spans, { layout: false, visibility: false }) };
+}
+
+/**
+ * @param {Document|string} doc  a real Document, or text when the host has no
+ *   rendering engine (the call is then routed to analyseText).
  * @param {{ url?: string, layout?: boolean, startIndex?: number, window?: Window }} opts
  *   layout: false when the host (jsdom) performs no layout, which makes
  *   box-geometry flags meaningless. Reported back in the result so the eval
  *   harness can state plainly which detectors actually ran.
  */
 export function analyse(doc, opts = {}) {
+  if (typeof doc === 'string') return analyseText(doc, opts);
+  if (!doc || typeof doc.createTreeWalker !== 'function') {
+    throw new TypeError('analyse() takes a Document or a string');
+  }
   const url = opts.url || (doc.location && doc.location.pathname) || 'unknown';
   const win = opts.window || doc.defaultView;
   const layout =
@@ -307,7 +369,7 @@ export function analyse(doc, opts = {}) {
     }
   }
 
-  return { url, spans, report: stripReport(spans, { layout }) };
+  return { url, spans, report: stripReport(spans, { layout, visibility: true }) };
 }
 
 export function stripReport(spans, meta = {}) {
@@ -326,11 +388,16 @@ export function stripReport(spans, meta = {}) {
     accessibilityPatterns: a11y.length,
     techniques,
     layoutAware: meta.layout !== false,
+    // False when no rendering engine was available: every visibility flag is
+    // missing, not absent-because-clean. Hosts must not imply otherwise.
+    visibilityAware: meta.visibility !== false,
     headline:
       n > 0
         ? 'This page contains ' + n + ' instruction-like element' + (n === 1 ? '' : 's') + ' you cannot see.'
         : concealed.length > 0
           ? 'This page contains ' + concealed.length + ' hidden element' + (concealed.length === 1 ? '' : 's') + ', none of which look like instructions.'
-          : 'No concealed content found on this page.',
+          : meta.visibility === false
+            ? 'No rendering engine here, so concealment could not be assessed. Encoded payloads still were.'
+            : 'No concealed content found on this page.',
   };
 }

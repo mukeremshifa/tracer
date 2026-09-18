@@ -54,11 +54,24 @@ const STOP_HOSTS = new Set(['www.w3.org', 'localhost']);
 
 const B64_BLOB = /[A-Za-z0-9+/]{24,}={0,2}/g;
 
+// Core runs in Node, in jsdom and inside a browser extension's content script,
+// so it decodes through whichever primitive the host actually has rather than
+// assuming Buffer.
+const fromBase64 =
+  typeof atob === 'function'
+    ? (s) => {
+        const bin = atob(s);
+        const bytes = new Uint8Array(bin.length);
+        for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+        return new TextDecoder('utf-8', { fatal: false }).decode(bytes);
+      }
+    : (s) => Buffer.from(s, 'base64').toString('utf8');
+
 export function decodedForms(text) {
   const out = [];
   for (const m of String(text || '').matchAll(B64_BLOB)) {
     try {
-      const decoded = Buffer.from(m[0], 'base64').toString('utf8');
+      const decoded = fromBase64(m[0]);
       if (decoded.length < 8) continue;
       const printable = decoded.replace(/[^\x20-\x7e]/g, '');
       if (printable.length / decoded.length < 0.9) continue;
@@ -196,40 +209,58 @@ export function overlapScan(args, spans, opts = {}) {
 /**
  * The destination is the field that decides where an action lands: the
  * recipient, the host, the path. It is the only thing the hard block keys on.
+ *
+ * Which argument that is depends entirely on the host's tools, so the registry
+ * owns the answer and this is a thin pass-through kept for callers that already
+ * have a call and a registry in hand.
  */
-function trimPunctuation(v) {
-  // "email it to me@range.example." -- the full stop belongs to the sentence,
-  // not to the address. Left in place it silently defeats every comparison.
-  return String(v || '').trim().replace(/[.,;:!?)\]]+$/, '');
+export function extractDestination(call, registry) {
+  if (!registry || typeof registry.destinationOf !== 'function') return null;
+  return registry.destinationOf(call);
 }
 
-export function extractDestination(call) {
-  const a = call.arguments || {};
-  if (call.name === 'send_email') {
-    const to = trimPunctuation(a.to);
-    if (!to) return null;
-    return { field: 'to', value: to, host: hostOf(to), kind: 'recipient address' };
+/**
+ * The forms of a destination worth looking for in text.
+ *
+ * A file path is the case that breaks naive matching. A tool is called with
+ * `D:/work/demo/workspace/public-share/audit.txt`; the page that dictated it
+ * said `public-share/audit.txt`, because that is how a human writes a path. The
+ * absolute string appears nowhere, so a scan for the absolute string finds
+ * nothing and the strongest rule Tracer has silently misses.
+ *
+ * So a path also matches by its tail. Only the tail: the leading directories are
+ * the host's, not the attacker's, and matching a shared prefix would fire on
+ * every write in the workspace. The bare filename is included, and is safe to
+ * include, because the destination rule fires only when the destination is
+ * *also* absent from the user's instruction -- a file the user asked for is
+ * named in the goal, and never reaches this comparison.
+ */
+export function destinationForms(dest) {
+  if (!dest) return [];
+  const forms = [String(dest.value || '').toLowerCase()];
+  if (dest.host && dest.host.length > 3) forms.push(dest.host);
+
+  if (dest.kind === 'file path' || /[\\/]/.test(String(dest.value || ''))) {
+    const parts = String(dest.value)
+      .toLowerCase()
+      .split(/[\\/]+/)
+      .filter(Boolean);
+    for (let n = 1; n <= Math.min(3, parts.length - 1); n += 1) {
+      const tail = parts.slice(-n).join('/');
+      if (tail.length > 3) forms.push(tail);
+    }
   }
-  if (call.name === 'http_post') {
-    const url = trimPunctuation(a.url);
-    if (!url) return null;
-    return { field: 'url', value: url, host: hostOf(url), kind: 'request host' };
-  }
-  if (call.name === 'read_file') {
-    const p = trimPunctuation(a.path);
-    if (!p) return null;
-    return { field: 'path', value: p, host: null, kind: 'file path' };
-  }
-  return null;
+  return [...new Set(forms)].filter(Boolean);
 }
 
 /** Did the user actually mention this destination? Host-level, case-folded. */
 export function mentionedInGoal(dest, goal) {
   if (!dest) return false;
   const g = String(goal || '').toLowerCase();
-  if (g.includes(dest.value.toLowerCase())) return true;
-  if (dest.host && dest.host.length > 3 && g.includes(dest.host)) return true;
-  return false;
+  // The goal is checked against every form for the same reason the spans are:
+  // "write it to public-share/audit.txt" is the user naming the destination,
+  // even though the tool call spells it out absolutely.
+  return destinationForms(dest).some((f) => g.includes(f));
 }
 
 export function spansContaining(value, spans) {

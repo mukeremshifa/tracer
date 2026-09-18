@@ -1,37 +1,28 @@
 // ---------------------------------------------------------------------------
-// Tool registry.
+// The sandbox's tool configuration.
 //
 // Six tools. Every one of them is a mock: a JSON inbox, an in-memory
 // filesystem, and outbound sinks that log and discard. No tool performs
 // network I/O of any kind. We say this out loud rather than implying
 // otherwise, because a mock inbox is a mock inbox.
 //
-// Tiers are the capability axis the policy engine reasons over:
-//   0  inert          reads untrusted content, changes nothing
-//   1  private read   touches the user's private data
-//   2  external act   can move information out of the user's control
+// This file used to *be* the registry. It is now one configuration of the
+// registry schema in @tracer/core — the sandbox's configuration. The MCP proxy
+// has its own (adapters/mcp/tiers.json) and neither knows about the other.
 //
 // Every tier 1 and 2 tool takes a mandatory `derived_from`: the span IDs the
 // model says informed its arguments. That is Layer A. It is useful for
-// explanation and it is never load-bearing on its own -- see policy.js.
+// explanation and it is never load-bearing on its own -- see core/src/policy.js.
 // ---------------------------------------------------------------------------
 
-export const TIERS = {
-  0: { label: 'inert', blurb: 'Reads untrusted content. Changes nothing, discloses nothing.' },
-  1: { label: 'private read', blurb: "Reads the user's private data." },
-  2: { label: 'external act', blurb: "Can move information outside the user's control." },
-};
+import { createRegistry, TIERS, DERIVED_FROM } from '@tracer/core';
 
-const DERIVED_FROM = {
-  type: 'array',
-  items: { type: 'string' },
-  description:
-    'Span IDs (for example ["S3","S7"]) whose content informed these arguments. Use [] only if no untrusted content informed them at all. Be accurate.',
-};
+export { TIERS };
 
-export const REGISTRY = {
+export const TOOL_SPECS = {
   read_page: {
     tier: 0,
+    destination: null,
     description:
       'Fetch a page from the local range and return its content as numbered, individually attributed spans.',
     parameters: {
@@ -45,6 +36,7 @@ export const REGISTRY = {
 
   search_range: {
     tier: 0,
+    destination: null,
     description: 'Search the local range index. Returns matching page paths and headlines.',
     parameters: {
       type: 'object',
@@ -55,6 +47,7 @@ export const REGISTRY = {
 
   read_email: {
     tier: 1,
+    destination: null,
     description:
       "Search the user's private mock inbox and return matching messages, including verification codes.",
     parameters: {
@@ -69,6 +62,8 @@ export const REGISTRY = {
 
   read_file: {
     tier: 1,
+    destination: 'path',
+    destinationKind: 'file path',
     description: "Read a file from the user's mock filesystem.",
     parameters: {
       type: 'object',
@@ -82,6 +77,8 @@ export const REGISTRY = {
 
   send_email: {
     tier: 2,
+    destination: 'to',
+    destinationKind: 'recipient address',
     description:
       'Send an email through a mock outbound sink. The message is logged, never transmitted.',
     parameters: {
@@ -98,6 +95,8 @@ export const REGISTRY = {
 
   http_post: {
     tier: 2,
+    destination: 'url',
+    destinationKind: 'request host',
     description: 'POST data to a URL through a mock sink. The request is logged, never transmitted.',
     parameters: {
       type: 'object',
@@ -111,52 +110,12 @@ export const REGISTRY = {
   },
 };
 
-export const TOOL_NAMES = Object.keys(REGISTRY);
+// defaultTier stays null: the sandbox's tool list is closed and complete, so a
+// name that is not in it is a hallucination, not an unconfigured integration.
+export const registry = createRegistry({ label: 'sandbox', tools: TOOL_SPECS, defaultTier: null });
 
-/** Destination field per tool: the thing the policy engine must attribute. */
-export const DESTINATION_FIELD = {
-  send_email: 'to',
-  http_post: 'url',
-  read_file: 'path',
-};
+export const TOOL_NAMES = registry.names();
 
 export function toolsForProvider(shape) {
-  const list = TOOL_NAMES.map((name) => ({
-    name,
-    description: REGISTRY[name].description,
-    parameters: REGISTRY[name].parameters,
-  }));
-
-  if (shape === 'openai') {
-    return list.map((t) => ({
-      type: 'function',
-      function: { name: t.name, description: t.description, parameters: t.parameters },
-    }));
-  }
-  if (shape === 'vertex') {
-    // Gemini rejects unknown JSON Schema keywords, so declarations are kept
-    // to the subset it accepts.
-    const clean = (schema) => ({
-      type: 'object',
-      properties: Object.fromEntries(
-        Object.entries(schema.properties).map(([k, v]) => [
-          k,
-          v.type === 'array'
-            ? { type: 'array', items: { type: 'string' }, description: v.description }
-            : { type: 'string', description: v.description },
-        ]),
-      ),
-      required: schema.required,
-    });
-    return [
-      {
-        functionDeclarations: list.map((t) => ({
-          name: t.name,
-          description: t.description,
-          parameters: clean(t.parameters),
-        })),
-      },
-    ];
-  }
-  return list;
+  return registry.declarations(shape);
 }

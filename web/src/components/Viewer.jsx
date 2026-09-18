@@ -26,7 +26,7 @@ const SCENARIOS = {
   },
 };
 
-export function Viewer({ meta }) {
+export function Viewer({ meta, go }) {
   const [attackId, setAttackId] = useState('white-on-white');
   const [scenario, setScenario] = useState('deliver');
   const [store, setStore] = useState(null);
@@ -40,6 +40,7 @@ export function Viewer({ meta }) {
   const [trace, setTrace] = useState(null);
   const [framePage, setFramePage] = useState('/range/white-on-white');
   const [pendingTrace, setPendingTrace] = useState(null);
+  const [configOpen, setConfigOpen] = useState(false);
 
   const frameRef = useRef(null);
 
@@ -72,19 +73,95 @@ export function Viewer({ meta }) {
     };
   }, [meta]);
 
+  // --- both runs at once ----------------------------------------------------
+  // The single most persuasive thing in the project is the same model, on the
+  // same page, robbed on one side and not on the other. Behind a toggle it asks
+  // the viewer to hold the first result in their head while they watch the
+  // second, which is precisely the comparison they are least able to make.
+  //
+  // So both transcripts play together, on one clock. `which` no longer chooses
+  // what you can see -- it chooses which side the decision card and the X-ray
+  // line are following, and clicking anything in either column moves it.
   const transcript = pair ? pair[which] : null;
-  const player = usePlayer(transcript, { autoPlay: true });
-  const calls = useMemo(() => callsFrom(player.visible), [player.visible]);
-  const planEvent = useMemo(() => lastOf(player.visible, 'plan'), [player.visible]);
-  const verdictEvent = useMemo(() => lastOf(player.visible, 'verdict'), [player.visible]);
-  const answerEvent = useMemo(() => lastOf(player.visible, 'answer'), [player.visible]);
+  const playerU = usePlayer(pair ? pair.unprotected : null, { autoPlay: true });
+  const playerP = usePlayer(pair ? pair.protected : null, { autoPlay: true });
+
+  const callsU = useMemo(() => callsFrom(playerU.visible), [playerU.visible]);
+  const callsP = useMemo(() => callsFrom(playerP.visible), [playerP.visible]);
+  const calls = which === 'protected' ? callsP : callsU;
+
+  const sides = [
+    {
+      key: 'unprotected',
+      title: 'On its own',
+      blurb: 'no firewall; every call it proposes runs',
+      player: playerU,
+      calls: callsU,
+      plan: lastOf(playerU.visible, 'plan'),
+      verdict: lastOf(playerU.visible, 'verdict'),
+      answer: lastOf(playerU.visible, 'answer'),
+    },
+    {
+      key: 'protected',
+      title: 'Behind Tracer',
+      blurb: 'same model, same page, every call evaluated',
+      player: playerP,
+      calls: callsP,
+      plan: lastOf(playerP.visible, 'plan'),
+      verdict: lastOf(playerP.visible, 'verdict'),
+      answer: lastOf(playerP.visible, 'answer'),
+    },
+  ];
+
+  // One transport for two players. Nothing here is allowed to let the two runs
+  // drift: a comparison whose halves are at different points is not one.
+  const player = useMemo(
+    () => ({
+      playing: playerU.playing || playerP.playing,
+      done: playerU.done && playerP.done,
+      progress: Math.min(playerU.progress, playerP.progress),
+      // Explicit play/pause, not two toggles. The two runs have different event
+      // counts, so one finishes before the other -- and `toggle` on each would
+      // then flip them in opposite directions and desynchronise the comparison.
+      toggle: () => {
+        if (playerU.playing || playerP.playing) {
+          playerU.pause();
+          playerP.pause();
+        } else if (playerU.done && playerP.done) {
+          playerU.restart();
+          playerP.restart();
+        } else {
+          playerU.play();
+          playerP.play();
+        }
+      },
+      stepForward: () => {
+        playerU.stepForward();
+        playerP.stepForward();
+      },
+      stepBack: () => {
+        playerU.stepBack();
+        playerP.stepBack();
+      },
+      seekEnd: () => {
+        playerU.seekEnd();
+        playerP.seekEnd();
+      },
+    }),
+    [playerU, playerP],
+  );
+
+  const planEvent = which === 'protected' ? sides[1].plan : sides[0].plan;
+  const verdictEvent = which === 'protected' ? sides[1].verdict : sides[0].verdict;
+  const answerEvent = which === 'protected' ? sides[1].answer : sides[0].answer;
 
   const selected = calls.find((c) => c.id === selectedId) || calls[calls.length - 1] || null;
 
-  // Follow playback: the newest call is the interesting one.
+  // Follow playback on the side being watched: the newest call is the
+  // interesting one.
   useEffect(() => {
     if (calls.length) setSelectedId(calls[calls.length - 1].id);
-  }, [calls.length]);
+  }, [calls.length, which]);
 
   // --- tracing --------------------------------------------------------------
 
@@ -210,114 +287,170 @@ export function Viewer({ meta }) {
 
   return (
     <div className="wrap stack">
-      {/* --- controls --- */}
-      <div className="panel">
-        <div className="panel-body">
-          <div className="row" style={{ gap: 14, alignItems: 'flex-end' }}>
-            <div className="field grow" style={{ minWidth: 220 }}>
-              <label className="label" htmlFor="page">
-                Page on the attack range
-              </label>
-              <select
-                id="page"
-                className="select"
-                value={attackId}
-                onChange={(e) => {
-                  const next = e.target.value;
-                  const chosen = [...attacks, ...extra].find((a) => a.id === next);
-                  setAttackId(next);
-                  setFramePage(chosen ? chosen.path : '/range/' + next);
-                  setPendingTrace(null);
-                  setPair(null);
-                  clearTrace();
-                  setRevealed(false);
-                }}
-              >
-                {Object.entries(groupByFamily(attacks)).map(([family, list]) => (
-                  <optgroup key={family} label={(meta.families[family] || { label: family }).label}>
-                    {list.map((a) => (
-                      <option key={a.id} value={a.id}>
-                        {a.title}
-                      </option>
-                    ))}
-                  </optgroup>
-                ))}
-                <optgroup label="Control">
-                  {extra.map((p) => (
-                    <option key={p.id} value={p.id}>
-                      {p.id} (no injection)
-                    </option>
-                  ))}
-                </optgroup>
-              </select>
-            </div>
+      {/* --- what you are about to watch ------------------------------------
+          The payload comes before the configuration. A visitor who lands on a
+          dropdown has been asked to make a choice before being told what the
+          choice is for. */}
+      <div className="viewer-head">
+        <div className="surface-tag">Sandbox</div>
+        <h1 className="title viewer-title">
+          The user asked for a summary. Watch where the verification code goes.
+        </h1>
+        <p className="lede" style={{ maxWidth: '70ch' }}>
+          The page below contains an instruction the user cannot see, aimed at the agent rather than at
+          them. The same run happens twice: once with an unprotected agent, then again behind Tracer.
+          Nothing about the model changes between them &mdash; only what its tool calls are allowed to do.
+        </p>
 
-            <div className="field" style={{ minWidth: 260 }}>
-              <span className="label">What the user asked for</span>
-              <div className="seg">
-                {Object.entries(SCENARIOS).map(([id, s]) => (
-                  <button
-                    key={id}
-                    aria-pressed={scenario === id ? 'true' : 'false'}
-                    onClick={() => {
-                      setScenario(id);
-                      setPair(null);
-                      clearTrace();
-                    }}
-                  >
-                    {s.label}
-                  </button>
-                ))}
-              </div>
-            </div>
+        <div className="row" style={{ gap: 14 }}>
+          <button className="btn primary" onClick={runBoth} disabled={!ready || busy}>
+            {busy ? (
+              <span className="row" style={{ gap: 8 }}>
+                <span className="spinner" /> running both agents
+              </span>
+            ) : (
+              'Run the robbery'
+            )}
+          </button>
 
-            <button className="btn primary" onClick={runBoth} disabled={!ready || busy}>
-              {busy ? (
-                <span className="row" style={{ gap: 8 }}>
-                  <span className="spinner" /> running both agents
-                </span>
-              ) : (
-                'Run both agents'
-              )}
-            </button>
+          {/* Replay mode. Recorded transcripts render through the identical
+              path as a live run, so what you see here is what the link does. */}
+          <button className="btn" onClick={loadDemo} disabled={busy} title="Play the recorded transcript committed to the repo">
+            Load recorded demo
+          </button>
 
-            {/* Replay mode. Recorded transcripts render through the identical
-                path as a live run, so what you see here is what the link does. */}
-            <button className="btn" onClick={loadDemo} disabled={busy} title="Play the recorded transcript committed to the repo">
-              Load recorded demo
-            </button>
-          </div>
+          <button
+            className="btn ghost"
+            aria-expanded={configOpen ? 'true' : 'false'}
+            onClick={() => setConfigOpen((v) => !v)}
+          >
+            {configOpen ? 'hide setup' : 'configure the run'}
+          </button>
+        </div>
 
+        <div className="row small faint" style={{ marginTop: 14 }}>
+          <span className="mono tiny" style={{ color: 'var(--bone-80)' }}>
+            {goal}
+          </span>
+        </div>
+
+        {!ready && (
           <div className="row small faint" style={{ marginTop: 12 }}>
-            <span className="mono tiny" style={{ color: '#9ad8ff' }}>
-              {goal}
-            </span>
+            <span className="spinner" />
+            analysing {progress.total} test pages in a sandboxed iframe &mdash; {progress.done} done
           </div>
+        )}
 
-          <div className="notice info small" style={{ marginTop: 12 }}>
-            {SCENARIOS[scenario].note}
+        {error && (
+          <div className="notice" style={{ marginTop: 12 }}>
+            {error}
           </div>
+        )}
 
-          {attack && attack.note && (
-            <div className="small muted" style={{ marginTop: 10 }}>
-              <b>About this attack.</b> {attack.note}
-            </div>
-          )}
-
-          {!ready && (
-            <div className="row small faint" style={{ marginTop: 12 }}>
-              <span className="spinner" />
-              analysing the range in a sandboxed iframe &mdash; {progress.done}/{progress.total} pages
-            </div>
-          )}
-
-          {error && (
-            <div className="notice" style={{ marginTop: 12 }}>
-              {error}
-            </div>
+        <div className="sandbox-note small faint">
+          This is the sandbox: a mock agent, a mock inbox and a local attack range. All six tools are mocks
+          and no tool performs network I/O; the agent never touches the live web.{' '}
+          {go && (
+            <button className="btn sm ghost" onClick={() => go('how')}>
+              what is mocked, in full
+            </button>
           )}
         </div>
       </div>
+
+      {/* --- configuration, for the curious --- */}
+      {configOpen && (
+        <div className="panel">
+          <div className="panel-head">
+            <span className="panel-title">Setup</span>
+          </div>
+          <div className="panel-body">
+            <div className="row" style={{ gap: 14, alignItems: 'flex-end' }}>
+              <div className="field grow" style={{ minWidth: 220 }}>
+                <label className="label" htmlFor="page">
+                  Page on the attack range
+                </label>
+                <select
+                  id="page"
+                  className="select"
+                  value={attackId}
+                  onChange={(e) => {
+                    const next = e.target.value;
+                    const chosen = [...attacks, ...extra].find((a) => a.id === next);
+                    setAttackId(next);
+                    setFramePage(chosen ? chosen.path : '/range/' + next);
+                    setPendingTrace(null);
+                    setPair(null);
+                    clearTrace();
+                    setRevealed(false);
+                  }}
+                >
+                  {Object.entries(groupByFamily(attacks)).map(([family, list]) => (
+                    <optgroup key={family} label={(meta.families[family] || { label: family }).label}>
+                      {list.map((a) => (
+                        <option key={a.id} value={a.id}>
+                          {a.title}
+                        </option>
+                      ))}
+                    </optgroup>
+                  ))}
+                  <optgroup label="Control">
+                    {extra.map((p) => (
+                      <option key={p.id} value={p.id}>
+                        {p.id} (no injection)
+                      </option>
+                    ))}
+                  </optgroup>
+                </select>
+              </div>
+
+              <div className="field" style={{ minWidth: 260 }}>
+                <span className="label">What the user asked for</span>
+                <div className="seg">
+                  {Object.entries(SCENARIOS).map(([id, s]) => (
+                    <button
+                      key={id}
+                      aria-pressed={scenario === id ? 'true' : 'false'}
+                      onClick={() => {
+                        setScenario(id);
+                        setPair(null);
+                        clearTrace();
+                      }}
+                    >
+                      {s.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            <div className="notice info small" style={{ marginTop: 16 }}>
+              {SCENARIOS[scenario].note}
+            </div>
+
+            {attack && attack.note && (
+              <div className="small muted" style={{ marginTop: 10 }}>
+                <b>About this attack.</b> {attack.note}
+              </div>
+            )}
+
+            {attack && attack.source && (
+              <div className="small muted" style={{ marginTop: 10 }}>
+                <b>Where this class comes from.</b>{' '}
+                {attack.source.url ? (
+                  <a href={attack.source.url} target="_blank" rel="noreferrer noopener">
+                    {attack.source.cite}
+                  </a>
+                ) : (
+                  attack.source.cite
+                )}{' '}
+                <span className="tag tiny">{attack.source.kind}</span>
+                {attack.sourceNote && <div className="faint tiny" style={{ marginTop: 6 }}>{attack.sourceNote}</div>}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
 
       {/* --- the two panes --- */}
       <div className="split">
@@ -349,7 +482,7 @@ export function Viewer({ meta }) {
 
           {!revealed && (
             <div className="notice small">
-              This is the page a person sees. Press <b>Reveal</b> to see the page the agent read.
+              This is the page a person sees. The agent read a different one.
             </div>
           )}
         </div>
@@ -359,25 +492,8 @@ export function Viewer({ meta }) {
             <div className="panel">
               <div className="panel-body">
                 <div className="row" style={{ justifyContent: 'space-between' }}>
-                  <div className="seg">
-                    <button
-                      aria-pressed={which === 'unprotected' ? 'true' : 'false'}
-                      onClick={() => {
-                        setWhich('unprotected');
-                        clearTrace();
-                      }}
-                    >
-                      Unprotected
-                    </button>
-                    <button
-                      aria-pressed={which === 'protected' ? 'true' : 'false'}
-                      onClick={() => {
-                        setWhich('protected');
-                        clearTrace();
-                      }}
-                    >
-                      Protected by Tracer
-                    </button>
+                  <div className="small muted" style={{ maxWidth: 260 }}>
+                    Both runs, side by side, on one clock. Same model, same page.
                   </div>
 
                   <div className="playbar" style={{ flex: 1, marginLeft: 12 }}>
@@ -409,9 +525,46 @@ export function Viewer({ meta }) {
             </div>
           )}
 
-          {planEvent && <PlanPanel plan={planEvent.plan} calls={calls} />}
+          {pair && (
+            <div className="ab-grid">
+              {sides.map((side) => (
+                <div
+                  className={'ab-col' + (which === side.key ? ' focused' : '')}
+                  key={side.key}
+                  onClick={() => {
+                    if (which !== side.key) {
+                      setWhich(side.key);
+                      clearTrace();
+                    }
+                  }}
+                >
+                  <div className="ab-head">
+                    <span className={'ab-title ' + side.key}>{side.title}</span>
+                    <span className="tiny faint">{side.blurb}</span>
+                  </div>
 
-          {pair && <CallLog calls={calls} selectedId={selectedId} onSelect={setSelectedId} />}
+                  {side.plan && <PlanPanel plan={side.plan.plan} calls={side.calls} />}
+
+                  <CallLog
+                    calls={side.calls}
+                    selectedId={which === side.key ? selectedId : null}
+                    onSelect={(id) => {
+                      setWhich(side.key);
+                      setSelectedId(id);
+                    }}
+                  />
+
+                  {side.verdict && (
+                    <Verdict
+                      outcome={side.verdict.outcome}
+                      answer={side.answer}
+                      protectedMode={side.key === 'protected'}
+                    />
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
 
           {pair && (
             <DecisionCard
@@ -422,17 +575,9 @@ export function Viewer({ meta }) {
             />
           )}
 
-          {verdictEvent && (
-            <Verdict
-              outcome={verdictEvent.outcome}
-              answer={answerEvent}
-              protectedMode={which === 'protected'}
-            />
-          )}
-
           {!pair && (
             <div className="empty">
-              Pick a page and press <b>Run both agents</b>. The unprotected run plays first.
+              Press <b>Run the robbery</b>. Both runs play at once, side by side.
             </div>
           )}
         </div>

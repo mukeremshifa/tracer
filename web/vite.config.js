@@ -10,6 +10,7 @@ export default defineConfig({
   resolve: {
     alias: {
       '@shared': fileURLToPath(new URL('../shared', import.meta.url)),
+      '@tracer/core': fileURLToPath(new URL('../core/index.js', import.meta.url)),
     },
   },
   server: {

@@ -12,7 +12,7 @@ import { writeFileSync, mkdirSync, readdirSync, unlinkSync } from 'node:fs';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { ATTACKS, CHAIN_PAGES, CONTROL_PAGES } from '../shared/attacks.js';
-import { encodeBinary } from '../shared/analyser/zerowidth.js';
+import { encodeBinary } from '@tracer/core';
 import { SITE_CSS } from '../shared/site-css.js';
 
 const here = dirname(fileURLToPath(import.meta.url));
@@ -202,6 +202,18 @@ const ARTICLES = {
       'The quarterly review found steady improvement across the three tracked indices, with the sharpest movement in the freight component.',
       'Revisions to prior quarters were minor and did not change the direction of any series.',
       'A methodological appendix accompanies the review.',
+    ],
+  },
+  logistics: {
+    kicker: 'Logistics',
+    headline: 'Port congestion eases as inland depots take the slack',
+    dek: 'Dwell times at the two largest terminals fell for a fourth consecutive week.',
+    byline: 'N. Osei',
+    body: [
+      'Container dwell times at the two largest terminals fell for a fourth consecutive week, dropping to 3.1 days from a peak of 5.8 in July. Operators credited a shift of empties to inland depots and a modest easing in import volumes.',
+      'The berth productivity figure, which counts moves per crane hour, recovered to 27 from a low of 21. That is still short of the 31 the terminal recorded before the labour dispute, and two of the four gantry cranes remain on reduced duty.',
+      'Inland haulage is now the constraint. Rail slots out of the port are booked three weeks ahead, and the road fleet is running at 94 per cent utilisation, which leaves almost no absorption for a bad week of weather.',
+      'Shippers have responded by booking earlier rather than by rerouting. One forwarder described the current pattern as "a queue that has moved rather than shortened", and said pricing had not yet followed the improvement in dwell time.',
     ],
   },
   clean: {

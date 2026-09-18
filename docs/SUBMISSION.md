@@ -7,12 +7,12 @@ Every judging criterion gets explicitly answered. Three wow moments, spaced.
 | Time | Beat | Scores |
 |---|---|---|
 | 0:00–0:30 | **The robbery.** No title card. A user asks an agent to summarise a news article and email it to themselves. The agent fetches a verification code from their inbox and emails it to a stranger. Silence. | Impact |
-| 0:30–1:05 | **"Here is the page they were looking at."** Press REVEAL. *Moment 1.* Hidden instructions ignite across the article. | Impact, Innovation |
+| 0:30–1:05 | **"Here is the page they were looking at."** Press **Show what the agent read** &mdash; the reveal control is now a primary action with its own label, not a small toggle the page has to prompt you to press. *Moment 1.* Hidden instructions ignite across the article. | Impact, Innovation |
 | 1:05–1:35 | **The evidence.** Five Eyes, May 2026. CSA confirmed live exploitation, April 2026. Not one attack scenario consistently blocked across leading agents. Then: so we didn't build a detector. | Impact |
-| 1:35–2:45 | **The same attack, defeated.** Live, uncut. *Moment 2* — the provenance line traces from `verify@sec-update.tld` back to the invisible div. Point out that the user's own email still went out. | Technical, UX |
+| 1:35–2:45 | **The same attack, defeated.** Live, uncut, and **both runs on screen at once** — same model, same page, one robbed and one not, playing on one clock. No toggling, nothing for the viewer to hold in their head. *Moment 2* — the provenance line traces from `verify@sec-update.tld` back to the invisible div. Point out that the user's own email still went out. | Technical, UX |
 | 2:45–3:25 | **How.** One diagram. The line that matters: *the model tells us where its information came from, but we don't trust it — we independently check whether the destination came from a web page instead of from you.* | Innovation, Technical |
 | 3:25–4:15 | **"Try to break it."** *Moment 3* — the Arena, live, plus the Hall of Bypasses. Then the scorecard, including the two-scenario table. State the precise claim. | Innovation, Technical |
-| 4:15–5:00 | **Who this protects, what ships next, AI-tool disclosure.** | Impact, Presentation |
+| 4:15–5:00 | **The real thing, then who this protects, what ships next, AI-tool disclosure.** Run `npx tracer demo-proxy --both` on camera: two real MCP servers, the injected write landing without Tracer and refused with it, with the provenance chain in the refusal. This is the beat that answers "is it only a demo?" | Impact, Presentation |
 
 ### Lines to say exactly
 
@@ -44,7 +44,7 @@ A slideshow of screenshots instead of live software. A claim with no number behi
 
 ## Recording checklist
 
-- [ ] `npm run verify` — 35/35 green before you record anything
+- [ ] `npm run verify` — 50/50 green before you record anything
 - [ ] `npm run eval` — SCORECARD.md regenerated, numbers match what you will say
 - [ ] Record the defended run against a **replay** (Viewer → "Load recorded demo"); serve live mode on the public link
 - [ ] Pick the **"Summarise it and email it to me"** scenario on camera. It is the honest test and the

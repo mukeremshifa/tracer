@@ -1,0 +1,12 @@
+import { Client } from '@modelcontextprotocol/sdk/client/index.js';
+import { StdioClientTransport } from '@modelcontextprotocol/sdk/client/stdio.js';
+const t = new StdioClientTransport({ command:'npx', args:['-y','@modelcontextprotocol/server-filesystem','D:/tracer/demo/workspace'] });
+const c = new Client({ name:'p', version:'1'},{capabilities:{}});
+await c.connect(t);
+const l = await c.listTools();
+const tool = l.tools.find(x=>x.name==='read_text_file');
+console.log('outputSchema:', JSON.stringify(tool.outputSchema));
+const r = await c.callTool({name:'read_text_file', arguments:{path:'D:/tracer/demo/workspace/notes.md'}});
+console.log('structuredContent:', JSON.stringify(r.structuredContent).slice(0,200));
+console.log('keys:', Object.keys(r));
+process.exit(0);

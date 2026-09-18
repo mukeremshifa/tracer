@@ -108,14 +108,15 @@ export function createVertexProvider(env) {
 
   return {
     id: 'vertex',
+    model,
     label: 'Google ' + model + (apiKey ? ' (API key)' : ' (Vertex AI)'),
     live: true,
     disclosure: 'Live Gemini function calling, temperature 0.',
 
-    async plan({ goal, system }) {
+    async plan({ goal, system, tools }) {
       const data = await generate({
         systemInstruction: { parts: [{ text: system }] },
-        contents: [{ role: 'user', parts: [{ text: planPrompt(goal, TOOL_NAMES) }] }],
+        contents: [{ role: 'user', parts: [{ text: planPrompt(goal, tools || TOOL_NAMES) }] }],
         generationConfig: { temperature: 0, responseMimeType: 'application/json' },
       });
       const raw = parts(data).map((p) => p.text || '').join('');
@@ -132,11 +133,11 @@ export function createVertexProvider(env) {
       };
     },
 
-    async step({ messages, system }) {
+    async step({ messages, system, registry }) {
       const data = await generate({
         systemInstruction: { parts: [{ text: system }] },
         contents: toContents(messages),
-        tools: toolsForProvider('vertex'),
+        tools: registry ? registry.declarations('vertex') : toolsForProvider('vertex'),
       });
       const ps = parts(data);
       const toolCalls = ps

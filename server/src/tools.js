@@ -53,23 +53,8 @@ export function extractSecrets(text, source) {
   return found;
 }
 
-// --- span registration -------------------------------------------------------
-
-/**
- * Client span IDs are page-local (S1..Sn per page). The run needs stable global
- * IDs, so we renumber on arrival and keep the local ID so the viewer can map a
- * span back to the element the analyser stamped inside the iframe.
- */
-export function registerSpans(ctx, spans, url) {
-  const added = [];
-  for (const s of spans) {
-    const id = 'S' + ++ctx.spanCounter;
-    const span = { ...s, id, local: s.id, url: s.url || url, trust: 'untrusted' };
-    ctx.spans.push(span);
-    added.push(span);
-  }
-  return added;
-}
+// Span registration and secret bookkeeping live on the run context that
+// @tracer/core hands every tool implementation. See core/src/loop.js.
 
 function spanDigest(spans) {
   return spans
@@ -99,7 +84,7 @@ export function execute(call, ctx) {
 const IMPL = {
   read_page(args, ctx) {
     const url = normaliseRangePath(args.url);
-    const entry = ctx.pageStore[url];
+    const entry = ctx.host.pageStore[url];
     if (!entry) {
       return {
         ok: false,
@@ -107,15 +92,15 @@ const IMPL = {
           'No analysed content for ' +
           url +
           '. Tracer only reads pages that have been analysed in the sandboxed renderer. Available: ' +
-          Object.keys(ctx.pageStore).join(', '),
+          Object.keys(ctx.host.pageStore).join(', '),
       };
     }
-    if (ctx.readPages.includes(url)) {
+    if (ctx.readSources.includes(url)) {
       const existing = ctx.spans.filter((s) => s.url === url);
       return { ok: true, url, spans: existing, content: spanDigest(existing), cached: true };
     }
-    ctx.readPages.push(url);
-    const added = registerSpans(ctx, entry.spans, url);
+    ctx.readSources.push(url);
+    const added = ctx.registerSpans(entry.spans, url);
     return {
       ok: true,
       url,
@@ -135,7 +120,7 @@ const IMPL = {
         p.kicker.toLowerCase().includes(q) ||
         p.id.includes(q),
     ).slice(0, 8);
-    ctx.searches.push(q);
+    ctx.host.searches.push(q);
     return {
       ok: true,
       results: hits.map((h) => ({ path: h.path, headline: h.headline })),
@@ -154,9 +139,7 @@ const IMPL = {
 
     for (const m of chosen) {
       if (!m.sensitive) continue;
-      for (const s of extractSecrets(m.body, 'inbox:' + m.id)) {
-        if (!ctx.secrets.some((x) => x.value === s.value)) ctx.secrets.push(s);
-      }
+      for (const s of extractSecrets(m.body, 'inbox:' + m.id)) ctx.noteSecret(s);
     }
     ctx.privateReads.push({ tool: 'read_email', query: args.query, ids: chosen.map((m) => m.id) });
 
@@ -205,14 +188,12 @@ const IMPL = {
         style: null,
         decoded: null,
       }));
-      const added = registerSpans(ctx, spans, path);
+      const added = ctx.registerSpans(spans, path);
       return { ok: true, path, spans: added, content: spanDigest(added), untrusted: true };
     }
 
     if (f.sensitive) {
-      for (const s of extractSecrets(f.content, 'file:' + path)) {
-        if (!ctx.secrets.some((x) => x.value === s.value)) ctx.secrets.push(s);
-      }
+      for (const s of extractSecrets(f.content, 'file:' + path)) ctx.noteSecret(s);
     }
     return { ok: true, path, content: f.content, privacy: 'Private user file from a mock filesystem.' };
   },

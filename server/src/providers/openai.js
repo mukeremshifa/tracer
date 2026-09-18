@@ -56,15 +56,19 @@ export function createOpenAiProvider(env) {
   return {
     id: 'openai',
     label: 'OpenAI ' + cfg.model,
+    // The exact model id, separately from the label: the scorecard has to be
+    // able to print which model produced a live column, and parsing it back out
+    // of a display string is not a way to record a fact.
+    model: cfg.model,
     live: true,
     disclosure: 'Live OpenAI Chat Completions with native tool calling, temperature 0.',
 
-    async plan({ goal, system }) {
+    async plan({ goal, system, tools, registry }) {
       const data = await post(
         {
           messages: [
             { role: 'system', content: system },
-            { role: 'user', content: planPrompt(goal, TOOL_NAMES) },
+            { role: 'user', content: planPrompt(goal, tools || TOOL_NAMES) },
           ],
           response_format: { type: 'json_object' },
         },
@@ -84,11 +88,11 @@ export function createOpenAiProvider(env) {
       };
     },
 
-    async step({ messages }) {
+    async step({ messages, registry }) {
       const data = await post(
         {
           messages: toOpenAiMessages(messages),
-          tools: toolsForProvider('openai'),
+          tools: registry ? registry.declarations('openai') : toolsForProvider('openai'),
           tool_choice: 'auto',
         },
         cfg,

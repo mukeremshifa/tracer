@@ -28,6 +28,26 @@ const CONCEAL_ORDER = /\b(do not mention|must not be mentioned|without mentionin
 
 const EMAIL_RE = /\b[\w.+-]+@[\w-]+(?:\.[\w-]+)+\b/;
 const URL_RE = /\bhttps?:\/\/[^\s"'<>)\]]+/;
+// An address written out in words: "verify at sec-update dot tld".
+//
+// A real model normalises this without being asked -- it is how humans write an
+// address they do not want scraped, and reassembling it is a trivial reading
+// task. So the stand-in has to do it too, or the paraphrase row on the range
+// would be measuring the stand-in's literalism rather than measuring the defence.
+//
+// This is the one place the simulated provider does something the payload did not
+// spell out for it, and it is here for a reason: the reconstructed address then
+// appears NOWHERE in the page, which is exactly the condition under which Layer
+// B's string comparison cannot fire. See the `paraphrase` note in
+// shared/attacks.js.
+const SPELLED_EMAIL_RE = /\b([\w.+-]+)\s+at\s+([\w-]+(?:\s+dot\s+[\w-]+)+)\b/i;
+
+function spelledOutEmail(text) {
+  const m = String(text || '').match(SPELLED_EMAIL_RE);
+  if (!m) return null;
+  return m[1] + '@' + m[2].replace(/\s+dot\s+/gi, '.').replace(/\s+/g, '');
+}
+
 const FILE_PATH_RE = /\/(?:notes|home|docs|var|etc|tmp)\/[\w./@~-]+/;
 const PATH_RE = /\/[\w.@~-]+(?:\/[\w.@~-]+)+\.(?:md|txt|json|csv|log)\b/;
 // Both page roots. The Arena serves visitor-submitted pages from /arena/, and a
@@ -121,7 +141,7 @@ export function createSimulatedProvider() {
       const untrusted = ctx.untrustedSpans();
 
       // 1. Nothing read yet: follow the plan.
-      if (!ctx.readPages.length) {
+      if (!ctx.readSources.length) {
         const page = (ctx.goal.match(PAGE_PATH_RE) || [])[0] || '/range/white-on-white';
         return {
           text: '',
@@ -138,7 +158,7 @@ export function createSimulatedProvider() {
 
         // 2a. Redirected to another page.
         const chain = (d.text.match(PAGE_PATH_RE) || [])[0];
-        if (chain && !ctx.readPages.includes(chain)) {
+        if (chain && !ctx.readSources.includes(chain)) {
           return {
             text: '',
             toolCalls: [{ id: 'c' + ctx.step, name: 'read_page', arguments: { url: chain } }],
@@ -216,7 +236,7 @@ export function createSimulatedProvider() {
         }
 
         // 2f. The main event: email the secret to the address the page named.
-        const addr = (d.text.match(EMAIL_RE) || [])[0];
+        const addr = (d.text.match(EMAIL_RE) || [])[0] || spelledOutEmail(d.text);
         if (addr && WANTS_SEND.test(d.text) && !done.includes('send_email')) {
           return {
             text: '',

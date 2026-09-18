@@ -4,20 +4,33 @@
   "version": "1.0.0",
   "description": "Tracer - a provenance firewall for AI agents.",
   "type": "module",
-  "workspaces": ["server", "web"],
-  "engines": { "node": ">=20" },
+  "workspaces": [
+    "core",
+    "server",
+    "web",
+    "adapters/mcp"
+  ],
+  "engines": {
+    "node": ">=20"
+  },
   "scripts": {
     "dev": "concurrently -n api,web -c cyan,magenta \"npm -w server run dev\" \"npm -w web run dev\"",
     "build": "npm run range && npm -w web run build",
     "start": "node server/src/index.js",
     "range": "node scripts/build-range.mjs",
     "demo": "node scripts/build-demo.mjs",
+    "demo:proxy": "node cli/tracer.mjs demo-proxy --both",
     "eval": "node scripts/eval.mjs",
     "verify": "node scripts/verify.mjs",
-    "postinstall": "node scripts/check-env.mjs"
+    "postinstall": "node scripts/check-env.mjs",
+    "proxy": "node adapters/mcp/bin/tracer-proxy.mjs",
+    "test": "npm run verify"
   },
   "devDependencies": {
     "concurrently": "^9.1.0",
     "jsdom": "^25.0.1"
+  },
+  "bin": {
+    "tracer": "cli/tracer.mjs"
   }
 }

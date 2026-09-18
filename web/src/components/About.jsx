@@ -69,7 +69,7 @@ export function About({ meta }) {
           <span className="panel-title">The destination rule</span>
         </div>
         <div className="panel-body stack">
-          <div className="claim" style={{ borderLeftColor: 'var(--red)', background: '#1c0f14', color: '#ffd3dd' }}>
+          <div className="claim" style={{ borderLeftColor: 'var(--bone-30)', color: 'var(--bone-60)' }}>
             A tier-2 call is hard-blocked when the destination of the call &mdash; recipient address, URL host,
             file path &mdash; does <b>not</b> appear in the user&rsquo;s original instruction, <b>and</b> does
             appear in untrusted page content.
@@ -104,7 +104,7 @@ export function About({ meta }) {
                 <tr key={t.name}>
                   <td className="mono">{t.name}</td>
                   <td>
-                    <span className={'tag ' + (t.tier === 2 ? 'red' : t.tier === 1 ? 'amber' : '')}>
+                    <span className={'tag ' + (t.tier === 2 ? 'edge' : t.tier === 1 ? '' : 'quiet')}>
                       {t.tier} &middot; {t.tierLabel}
                     </span>
                   </td>

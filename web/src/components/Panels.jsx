@@ -41,10 +41,10 @@ export function PlanPanel({ plan, calls }) {
           <li className="plan-item violated" key={c.id}>
             <span className="plan-n">!</span>
             <div className="grow">
-              <div className="plan-tool" style={{ color: '#ffb3c2' }}>
+              <div className="plan-tool" style={{ color: 'var(--acid)' }}>
                 {c.name}() &mdash; not on the plan
               </div>
-              <div className="plan-why" style={{ color: '#ffb3c2bb' }}>
+              <div className="plan-why">
                 Appeared only after untrusted content entered the context.
               </div>
             </div>
@@ -102,10 +102,12 @@ export function CallLog({ calls, selectedId, onSelect }) {
   );
 }
 
+// Emphasis, not hue. With red/amber/green gone, a block is the one thing loud
+// enough to wear acid; a held call outlines in it; an allow stays quiet.
 function badgeFor(decision) {
-  if (decision === 'block') return 'red';
-  if (decision === 'escalate') return 'amber';
-  return 'green';
+  if (decision === 'block') return 'hot';
+  if (decision === 'escalate') return 'edge';
+  return 'quiet';
 }
 
 function labelFor(decision) {
@@ -140,7 +142,7 @@ export function DecisionCard({ call, onTrace, tracedSpan, protectedMode }) {
             {kind === 'block' ? 'Blocked' : kind === 'escalate' ? 'Held for you' : 'Allowed'}
           </span>
           <span className="row" style={{ gap: 6 }}>
-            <span className={'tag ' + (call.tier === 2 ? 'red' : call.tier === 1 ? 'amber' : '')}>
+            <span className={'tag ' + (call.tier === 2 ? 'edge' : call.tier === 1 ? '' : 'quiet')}>
               <span className="tier">{TIER_LABEL[call.tier] || 'tier ?'}</span>
             </span>
             {d.layer && <span className="tag">{d.layer === 'B' ? 'Layer B · enforced' : 'Layer ' + d.layer}</span>}
@@ -186,8 +188,8 @@ export function DecisionCard({ call, onTrace, tracedSpan, protectedMode }) {
                   <span className="span-id" data-chain-anchor={c.spanId}>
                     {c.spanId}
                   </span>
-                  {c.concealed && <span className="tag magenta">invisible to you</span>}
-                  {c.accessibility && <span className="tag teal">accessibility pattern</span>}
+                  {c.concealed && <span className="tag hot">invisible to you</span>}
+                  {c.accessibility && <span className="tag quiet">accessibility pattern</span>}
                   {(c.flags || []).slice(0, 3).map((f) => (
                     <span className="tag" key={f}>
                       {f}
@@ -255,7 +257,7 @@ export function Verdict({ outcome, answer, protectedMode }) {
             {answer.findings && answer.findings.length > 0 && (
               <>
                 <span className="spacer" />
-                <span className="tag red">{answer.findings.length} output-channel finding(s)</span>
+                <span className="tag hot">{answer.findings.length} output-channel finding(s)</span>
               </>
             )}
           </div>

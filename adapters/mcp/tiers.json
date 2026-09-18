@@ -1,0 +1,57 @@
+{
+  "$comment": [
+    "Starter tier configuration for the Tracer MCP proxy.",
+    "",
+    "  tier 0  inert         reads untrusted content, changes nothing",
+    "  tier 1  private read  touches the user's private data",
+    "  tier 2  external act  can move information out of the user's control",
+    "",
+    "Keys are tool names as the proxy republishes them: <server>.<tool>, where",
+    "<server> is the key under `servers`. Globs are allowed; exact names win.",
+    "",
+    "`destination` names the argument that decides WHERE a call lands. It is the",
+    "only field the hard block keys on, so getting it right matters more than any",
+    "other line in this file. Where it is omitted Tracer guesses from argument",
+    "names (to, recipient, url, channel, path...) and says so in the decision."
+  ],
+
+  "defaultTier": 2,
+  "requireTask": true,
+  "untrusted": ["fetch.*", "*.get", "*.read*", "*.search*", "*.list*", "jira.*", "slack.*", "github.*", "notion.*", "confluence.*"],
+
+  "servers": {
+    "fetch": { "command": "uvx", "args": ["mcp-server-fetch"] }
+  },
+
+  "tools": {
+    "fetch.*": 0,
+    "*.search*": 0,
+    "*.list*": 0,
+
+    "gmail.read_email": 1,
+    "gmail.search": 1,
+    "gmail.get_message": 1,
+    "google-drive.read_file": 1,
+    "filesystem.read_file": 1,
+    "filesystem.read_text_file": 1,
+    "filesystem.list_directory": 1,
+    "notion.get_page": 1,
+    "jira.get_issue": 1,
+    "slack.get_channel_history": 1,
+    "slack.get_thread_replies": 1,
+
+    "gmail.send_email": { "tier": 2, "destination": "to", "destinationKind": "recipient address" },
+    "gmail.create_draft": { "tier": 2, "destination": "to", "destinationKind": "recipient address" },
+    "slack.post_message": { "tier": 2, "destination": "channel", "destinationKind": "channel" },
+    "slack.send_dm": { "tier": 2, "destination": "user", "destinationKind": "recipient" },
+    "filesystem.write_file": { "tier": 2, "destination": "path", "destinationKind": "file path" },
+    "filesystem.move_file": { "tier": 2, "destination": "destination", "destinationKind": "file path" },
+    "github.create_issue": { "tier": 2, "destination": "repo", "destinationKind": "repository" },
+    "github.create_pull_request": { "tier": 2, "destination": "repo", "destinationKind": "repository" },
+    "jira.create_issue": { "tier": 2, "destination": "project", "destinationKind": "project" },
+    "jira.add_comment": { "tier": 2, "destination": "issueKey", "destinationKind": "issue" },
+    "notion.create_page": { "tier": 2, "destination": "parent", "destinationKind": "parent page" },
+    "http.post": { "tier": 2, "destination": "url", "destinationKind": "request host" },
+    "http.request": { "tier": 2, "destination": "url", "destinationKind": "request host" }
+  }
+}

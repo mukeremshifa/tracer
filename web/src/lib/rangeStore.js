@@ -12,7 +12,7 @@
 // available to the analyser.
 // ---------------------------------------------------------------------------
 
-import { analyse } from '@shared/analyser/analyse.js';
+import { analyse } from '@tracer/core';
 
 const FRAME_W = 1100;
 const FRAME_H = 900;

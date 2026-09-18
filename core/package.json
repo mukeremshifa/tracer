@@ -1,0 +1,18 @@
+{
+  "name": "@tracer/core",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "description": "Host-agnostic provenance firewall: analyser, overlap scan, tier policy, plan-then-execute loop.",
+  "main": "index.js",
+  "exports": {
+    ".": "./index.js",
+    "./analyser": "./src/analyser/analyse.js",
+    "./zerowidth": "./src/analyser/zerowidth.js",
+    "./overlap": "./src/overlap.js",
+    "./policy": "./src/policy.js",
+    "./registry": "./src/registry.js",
+    "./loop": "./src/loop.js"
+  },
+  "sideEffects": false
+}

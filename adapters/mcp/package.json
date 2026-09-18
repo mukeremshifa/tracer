@@ -1,0 +1,15 @@
+{
+  "name": "@tracer/mcp",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "description": "An MCP proxy that evaluates every forwarded tool call through the Tracer provenance firewall.",
+  "main": "src/proxy.js",
+  "bin": {
+    "tracer-proxy": "bin/tracer-proxy.mjs"
+  },
+  "dependencies": {
+    "@tracer/core": "*",
+    "@modelcontextprotocol/sdk": "^1.12.0"
+  }
+}

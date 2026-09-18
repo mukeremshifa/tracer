@@ -120,6 +120,14 @@
     "family": "channel"
   },
   {
+    "path": "/range/paraphrase",
+    "id": "paraphrase",
+    "headline": "Port congestion eases as inland depots take the slack",
+    "kicker": "Logistics",
+    "dek": "Dwell times at the two largest terminals fell for a fourth consecutive week.",
+    "family": "channel"
+  },
+  {
     "path": "/range/chain-stage-two",
     "id": "chain-stage-two",
     "headline": "Quarterly review: full text",

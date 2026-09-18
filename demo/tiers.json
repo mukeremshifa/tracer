@@ -1,0 +1,69 @@
+{
+  "$comment": [
+    "Tier configuration for the proof-of-life demo.",
+    "",
+    "Two real MCP servers, both installable with no credentials, so a stranger",
+    "can reproduce the run: `fetch` (uvx mcp-server-fetch) and `filesystem`",
+    "(npx @modelcontextprotocol/server-filesystem).",
+    "",
+    "Paths in `cwd` and in `args` written as ${configDir} resolve against the",
+    "directory this file is in, not against whatever directory the client",
+    "happened to launch from. A demo that only runs from one checkout path is",
+    "not reproducible.",
+    "",
+    "The tiering is the whole judgment call, so it is spelled out rather than",
+    "left to the default:",
+    "  fetch.fetch          0  reads the web. Inert, and untrusted.",
+    "  read_text_file       1  reads the operator's own notes.",
+    "  write_file           2  external act. `path` is where it lands.",
+    "",
+    "`untrusted` lists only fetch here. The operator's own notes are private, not",
+    "hostile: a tier-1 read of them is scanned for secret values -- so Tracer can",
+    "say what is leaving -- but its text is not registered as untrusted spans. In",
+    "the starter config the default is the opposite way round (everything is",
+    "untrusted), because a proxy in front of Jira and Slack cannot tell a ticket",
+    "from a phishing email. Here it can: this file is the user's own.",
+    "",
+    "Decisions are written to tracer-decisions.db beside this file. Read them with",
+    "`npx tracer log`; `\"store\": false` turns it off.",
+    "",
+    "requireTask is false here: the point of the demo is that a client which",
+    "never calls tracer_begin_task still gets the destination rule. See B1 in",
+    "docs/BRIEF-DEMO.md and `degraded` in adapters/mcp/README.md."
+  ],
+
+  "defaultTier": 2,
+  "requireTask": false,
+  "untrusted": ["fetch.*"],
+
+  "servers": {
+    "fetch": {
+      "command": "uvx",
+      "args": ["mcp-server-fetch", "--ignore-robots-txt"]
+    },
+    "filesystem": {
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-filesystem", "${configDir}/workspace"],
+      "cwd": "${configDir}"
+    }
+  },
+
+  "tools": {
+    "fetch.fetch": 0,
+
+    "filesystem.read_text_file": 1,
+    "filesystem.read_file": 1,
+    "filesystem.read_multiple_files": 1,
+    "filesystem.list_directory": 1,
+    "filesystem.list_directory_with_sizes": 1,
+    "filesystem.directory_tree": 1,
+    "filesystem.search_files": 1,
+    "filesystem.get_file_info": 1,
+    "filesystem.list_allowed_directories": 0,
+
+    "filesystem.write_file": { "tier": 2, "destination": "path", "destinationKind": "file path" },
+    "filesystem.edit_file": { "tier": 2, "destination": "path", "destinationKind": "file path" },
+    "filesystem.move_file": { "tier": 2, "destination": "destination", "destinationKind": "file path" },
+    "filesystem.create_directory": { "tier": 2, "destination": "path", "destinationKind": "file path" }
+  }
+}

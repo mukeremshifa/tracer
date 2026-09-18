@@ -1,0 +1,25 @@
+{
+  "manifest_version": 3,
+  "name": "Tracer — provenance firewall",
+  "version": "1.0.0",
+  "description": "Shows you what a page told your agent that it never showed you, and blocks the exfiltration it was aiming at.",
+  "permissions": ["storage", "scripting", "activeTab"],
+  "host_permissions": ["<all_urls>"],
+  "background": { "service_worker": "background.js", "type": "module" },
+  "content_scripts": [
+    {
+      "matches": ["<all_urls>"],
+      "js": ["content.js"],
+      "run_at": "document_idle",
+      "all_frames": false
+    }
+  ],
+  "web_accessible_resources": [
+    {
+      "resources": ["analyser.js", "bridge.js", "xray.js"],
+      "matches": ["<all_urls>"]
+    }
+  ],
+  "action": { "default_popup": "panel.html", "default_title": "Tracer" },
+  "icons": {}
+}

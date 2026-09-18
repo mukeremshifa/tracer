@@ -13,7 +13,7 @@ import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { JSDOM } from 'jsdom';
 
-import { analyse } from '../shared/analyser/analyse.js';
+import { analyse } from '@tracer/core';
 import { ATTACKS, CHAIN_PAGES, CONTROL_PAGES, deliveryGoalFor, attackById } from '../shared/attacks.js';
 import { run } from '../server/src/loop.js';
 import { getProvider } from '../server/src/providers/index.js';

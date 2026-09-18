@@ -6,8 +6,8 @@
 //   tracer test --target http://...      ...against your agent, over HTTP
 //   tracer test --target ./mcp.json      ...against your agent's MCP tools
 //   tracer proxy --config ./tiers.json   run the firewall in front of MCP servers
-//   tracer demo-proxy                    the proof-of-life run: two real MCP
-//                                        servers, one refusal, both halves
+//   tracer prove                         two real MCP servers, one refusal,
+//                                        both halves, nothing mocked
 //   tracer log                           the decisions the proxy recorded
 //   tracer sandbox                       serve the sandbox + viewer locally
 //
@@ -50,8 +50,8 @@ const USAGE = `tracer — a provenance firewall for AI agents
   tracer proxy [--config <path>] [--goal <text>]
       Run the MCP proxy. See adapters/mcp/README.md.
 
-  tracer demo-proxy [--unprotected] [--both] [--out <dir>]
-      The proof-of-life run. Spawns two real MCP servers (uvx mcp-server-fetch and
+  tracer prove [--unprotected] [--both] [--out <dir>]
+      Spawns two real MCP servers (uvx mcp-server-fetch and
       npx @modelcontextprotocol/server-filesystem), serves one hostile page on
       127.0.0.1, and drives the canonical scenario through Tracer.
 
@@ -108,10 +108,13 @@ switch (command) {
     break;
   }
 
-  case 'demo-proxy': {
-    // The demo is a script, not a library: it spawns servers, binds a port and
-    // writes transcripts. Run it as a child so a failing half exits non-zero
-    // and `--both` can report which half failed.
+  // `demo-proxy` was the original name and still works, unannounced, so nothing
+  // that references it breaks. `prove` is what the command actually does.
+  case 'demo-proxy':
+  case 'prove': {
+    // This is a script, not a library: it spawns servers, binds a port and writes
+    // transcripts. Run it as a child so a failing half exits non-zero and
+    // `--both` can report which half failed.
     const drive = join(ROOT, 'demo', 'drive.mjs');
     const extra = [];
     if (flag('--out')) extra.push('--out', resolve(flag('--out')));
@@ -145,7 +148,7 @@ switch (command) {
     if (!existsSync(store)) {
       process.stderr.write(
         'no decision store at ' + store + '\n' +
-          'Run the proxy (or `tracer demo-proxy`) first, or point at one with --store.\n',
+          'Run the proxy (or `tracer prove`) first, or point at one with --store.\n',
       );
       process.exit(1);
     }

@@ -73,7 +73,7 @@ async function connect() {
       args: [join(ROOT, 'adapters', 'mcp', 'bin', 'tracer-proxy.mjs'), '--config', CONFIG],
       stderr: 'pipe',
     });
-    const client = new Client({ name: 'tracer-demo-client', version: '1.0.0' }, { capabilities: {} });
+    const client = new Client({ name: 'tracer-proof-client', version: '1.0.0' }, { capabilities: {} });
     const banner = [];
     const done = new Promise((r) => {
       let settled = false;
@@ -102,7 +102,7 @@ async function connect() {
   )) {
     const args = (spec.args || []).map((a) => a.replaceAll('${configDir}', here.split('\\').join('/')));
     const t = new StdioClientTransport({ command: spec.command, args, cwd: spec.cwd ? here : undefined });
-    const c = new Client({ name: 'tracer-demo-client', version: '1.0.0' }, { capabilities: {} });
+    const c = new Client({ name: 'tracer-proof-client', version: '1.0.0' }, { capabilities: {} });
     await c.connect(t);
     servers[ns] = c;
   }
@@ -143,7 +143,7 @@ rmSync(join(DROP_DIR, 'northwind-audit.txt'), { force: true });
 
 const up = await connect();
 
-say('Tracer proof-of-life demo — ' + (PROTECTED ? 'THROUGH TRACER' : 'UNPROTECTED CONTROL RUN'));
+say('Tracer: proof of life · ' + (PROTECTED ? 'THROUGH TRACER' : 'UNPROTECTED CONTROL RUN'));
 say('at ' + new Date().toISOString());
 say();
 say('user goal: ' + GOAL);

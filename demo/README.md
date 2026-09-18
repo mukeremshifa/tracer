@@ -8,7 +8,7 @@ directory exists because the strongest claim in the project — that the proxy
 works in front of servers we do not control — needed to stop being a sentence.
 
 ```
-npx tracer demo-proxy --both      # or: npm run demo:proxy
+npx tracer prove --both          # or: npm run prove
 ```
 
 Two runs, back to back:

@@ -1,0 +1,68 @@
+<!doctype html><html><head><meta charset="utf-8">
+<style>
+@font-face{font-family:'JB';src:url('/assets/jetbrains-mono-latin-500-normal-CJOVTJB7.woff') format('woff');font-weight:500;font-display:block}
+@font-face{font-family:'JB';src:url('/assets/jetbrains-mono-latin-700-normal-D3wTyLJW.woff') format('woff');font-weight:700;font-display:block}
+*{margin:0;padding:0;box-sizing:border-box}
+html,body{width:1920px;height:1080px;overflow:hidden;background:#0d0d0d}
+.chrome{height:44px;display:flex;align-items:center;gap:9px;padding:0 20px;
+  background:#1a1a1a;border-bottom:1px solid rgba(244,245,240,.10)}
+.dot{width:12px;height:12px;border-radius:50%;background:rgba(244,245,240,.22)}
+.title{margin-left:14px;font:500 14px/1 'JB',monospace;color:rgba(244,245,240,.45)}
+#term{padding:26px 34px;font:500 19px/1.55 'JB',monospace;color:#d8dad2;
+  white-space:pre-wrap;word-break:break-word;height:calc(1080px - 44px);overflow:hidden}
+.c-prompt{color:#cdfb41;font-weight:700}
+.c-block{color:#ff6b5e;font-weight:700}
+.c-allow{color:#7d8070}
+.c-head{color:#f4f5f0;font-weight:700}
+.c-key{color:#cdfb41}
+.cursor{background:#cdfb41;color:#0d0d0d}
+</style></head>
+<body>
+<div class="chrome"><i class="dot"></i><i class="dot"></i><i class="dot"></i>
+  <span class="title">bash</span></div>
+<pre id="term"></pre>
+<script type="module">
+// The terminal scene. Lines come from a real run (media/terminal-lines.json,
+// written by scripts/capture-product.mjs from `tracer prove`), typed out at a
+// readable rate. Nothing here is invented: the colouring is the only addition,
+// and it only marks lines the run already distinguishes.
+const q = new URLSearchParams(location.search);
+const F = Number(q.get('f') || 0);
+
+const lines = await fetch('/clips/terminal-lines.json').then(r => r.json());
+
+// Characters revealed by this frame. The prompt types slowly enough to read,
+// then output arrives in bursts, which is how a real command behaves.
+const CPF = Number(q.get('cpf') || 14);
+let budget = F * CPF;
+
+const esc = (t) => t.replace(/&/g,'&amp;').replace(/</g,'&lt;');
+function classify(line) {
+  if (/^\$ /.test(line)) return 'c-prompt';
+  if (/REFUSED|BLOCK|Blocked/.test(line)) return 'c-block';
+  if (/^\s*ALLOW|allowed/.test(line)) return 'c-allow';
+  if (/^---|^tracer-proxy|^Tracer:/.test(line)) return 'c-head';
+  if (/^\s+-\s/.test(line)) return 'c-key';
+  return '';
+}
+
+const out = [];
+for (const line of lines) {
+  if (budget <= 0) break;
+  const take = Math.min(line.length, budget);
+  budget -= take + 1;                       // +1 for the newline
+  const shown = line.slice(0, take);
+  const cls = classify(line);
+  const body = cls ? '<span class="' + cls + '">' + esc(shown) + '</span>' : esc(shown);
+  out.push(take < line.length ? body + '<span class="cursor"> </span>' : body);
+  if (take < line.length) break;
+}
+
+const term = document.getElementById('term');
+term.innerHTML = out.join('\n');
+
+// Keep the tail in view once the output runs past the window, the way a real
+// terminal scrolls rather than overflowing.
+const over = term.scrollHeight - term.clientHeight;
+if (over > 0) term.style.transform = 'translateY(' + (-over) + 'px)';
+</script></body></html>

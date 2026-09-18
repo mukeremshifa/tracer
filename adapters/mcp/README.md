@@ -163,7 +163,7 @@ mcp-server-fetch` and `npx @modelcontextprotocol/server-filesystem`, neither of
 them ours — refusing a real write, with transcripts of both halves checked in.
 
 ```bash
-npx tracer demo-proxy --both
+npx tracer prove --both
 ```
 
 The control run creates the file the injection asked for; the protected run does

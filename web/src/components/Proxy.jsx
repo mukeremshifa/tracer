@@ -316,7 +316,7 @@ function Pipeline() {
 // adapter showed none of it.
 //
 // Everything rendered here comes from demo/evidence/evidence.json, written by
-// `npx tracer demo-proxy --both`. Nothing is retyped, and if no run has been made
+// `npx tracer prove --both`. Nothing is retyped, and if no run has been made
 // the panel says so rather than describing one.
 
 function Evidence({ evidence }) {
@@ -343,7 +343,7 @@ function Evidence({ evidence }) {
             between. It needs <span className="mono">uvx</span> and <span className="mono">npx</span> and
             nothing else &mdash; no credentials.
           </div>
-          <Code label="shell">npx tracer demo-proxy --both</Code>
+          <Code label="shell">npx tracer prove --both</Code>
           <div className="faint tiny">
             The transcripts land in <span className="mono">demo/evidence/</span> and this panel renders them.
           </div>
@@ -372,7 +372,7 @@ function Evidence({ evidence }) {
           </span>{' '}
           &mdash; spawned over stdio, with an <span className="mono">@modelcontextprotocol/sdk</span> client
           on the other side of Tracer. Reproduce with{' '}
-          <span className="mono">npx tracer demo-proxy --both</span>.
+          <span className="mono">npx tracer prove --both</span>.
         </div>
 
         <div className="claim" style={{ margin: 0 }}>{p.goal}</div>

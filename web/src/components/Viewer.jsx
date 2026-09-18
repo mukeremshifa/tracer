@@ -277,7 +277,7 @@ export function Viewer({ meta, go }) {
       setPair({ unprotected: demo.unprotected, protected: demo.protected });
       setWhich('unprotected');
     } catch (err) {
-      setError(String(err.message || err) + ' — build it with `npm run demo`.');
+      setError(String(err.message || err) + ' Build it with `npm run record`.');
     } finally {
       setBusy(false);
     }
@@ -316,7 +316,7 @@ export function Viewer({ meta, go }) {
           {/* Replay mode. Recorded transcripts render through the identical
               path as a live run, so what you see here is what the link does. */}
           <button className="btn" onClick={loadDemo} disabled={busy} title="Play the recorded transcript committed to the repo">
-            Load recorded demo
+            Play recorded run
           </button>
 
           <button

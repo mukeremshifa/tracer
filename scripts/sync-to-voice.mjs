@@ -91,16 +91,34 @@ function wordsPerLine() {
 }
 
 // Which lines were preceded by a break tag, and so can be anchored exactly.
+//
+// Read from the paste script rather than recomputed from the cue sheet. The
+// cue sheet is rewritten every time the picture is rebuilt, including by a
+// --sync run, so deriving the anchors from it means the second run disagrees
+// with the first about what was recorded. The paste file is what was actually
+// read aloud, and it does not change.
 const words = wordsPerLine();
-const WPM = 160;
-const anchored = new Set();
-{
-  let cur = 0;
-  for (const id of ids) {
-    if (cues.lines[id].at - cur >= 0.25) anchored.add(id);
-    cur = cues.lines[id].at + (words[id] || 12) / WPM * 60;
+const anchored = (() => {
+  const paste = path.join(REPO, 'docs/VOICEOVER-PASTE.md');
+  if (!existsSync(paste)) throw new Error('docs/VOICEOVER-PASTE.md is missing');
+  const body = readFileSync(paste, 'utf8');
+  const fence = body.match(/```\n([\s\S]*?)```/);
+  if (!fence) throw new Error('no script block in docs/VOICEOVER-PASTE.md');
+  // Every paragraph in the block is either a break tag or a spoken line, in
+  // order. A line is anchored when the paragraph before it was a tag.
+  const paras = fence[1].split(/\n\s*\n/).map((p) => p.trim()).filter(Boolean);
+  const set = new Set();
+  let n = 0;
+  let tagged = false;
+  for (const p of paras) {
+    if (/^<break\b/.test(p)) { tagged = true; continue; }
+    if (tagged) set.add(ids[n]);
+    tagged = false;
+    n += 1;
   }
-}
+  if (n !== ids.length) throw new Error(`script has ${n} lines, the cue sheet has ${ids.length}`);
+  return set;
+})();
 
 const gaps = silences().filter((s) => s.end - s.start >= TAG_GAP);
 const anchorIds = ids.filter((id) => anchored.has(id));

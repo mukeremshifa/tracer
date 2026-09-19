@@ -132,22 +132,37 @@ request.
 
 ## Status
 
-- [x] Camera and overlay modules, committed
-- [x] Folded into `capture-product.mjs`; the standalone sample script is gone
-- [x] `product-viewer` re-shot, 19.2s
-- [x] `product-xray` directed, 8.0s
-- [x] `product-landing` (replaces proxy), 18.7s
-- [x] `product-dashboard` (replaces arena's slot), 10.9s
-- [x] `product-arena` re-shot behind the Write your own toggle, 20.8s
-- [x] `docs/EDIT.md` rewritten around the 13-beat cut
-- [x] `media/product-proxy.mp4` deleted: its page no longer exists
+The video is cut. `media/tracer-silent.mp4` (2:39, no audio) and
+`media/tracer-voice.mp3` are the same length and both start at 0:00;
+`media/tracer-preview.mp4` is the two muxed for checking.
 
-- [x] Em dashes out of the interface and the cards, clips re-shot
-- [x] Closing card corrected from 89 to 91 assertions, and `docs/STATS.md` with it
+- [x] All five product scenes captured, directed, verified 1920x1080 at 30/1
+- [x] Em dashes out of the interface and the cards
+- [x] Client scene's absolute paths scrubbed at render
+- [x] Voiceover recorded (19 lines, one generation, break tags)
+- [x] Picture recut to the recorded voice with `assemble-cut.mjs --sync`
+- [x] `docs/SUBMISSION.md` rewritten against the cut that exists
 
-All five product scenes and all eight cards verified at 1920x1080, 30/1.
-Nothing outstanding for the automated work.
+Left to the user: captions and background music, in CapCut. The reasoning on
+both is in `docs/SUBMISSION.md` under "Captions and music", and the short
+version is that the lower third is occupied during the product shots and empty
+on the cards, so both belong on the cards only.
 
-Still manual, briefed in `docs/BRIEF-AGENT-CAPTURE.md`: the extension scene
-(Chrome accepts `--load-extension` and then does not install the unpacked MV3
-build) and, optionally, a live re-capture of the client scene.
+Still manual, briefed in `docs/BRIEF-AGENT-CAPTURE.md`: the extension scene.
+Chrome accepts `--load-extension` and then does not install the unpacked MV3
+build, so it cannot be captured unattended.
+
+---
+
+## Rebuilding
+
+```bash
+npm run build && npm start              # :8787, needed by the product scenes
+node scripts/capture-product.mjs        # re-capture the UI
+node scripts/render-clips.mjs           # re-render the cards
+node scripts/sync-to-voice.mjs --apply  # re-measure the narration
+node scripts/assemble-cut.mjs --sync    # cut the picture to it
+```
+
+`media/` is gitignored. Every clip in it is a build artifact and the sources
+that produce it are committed, so nothing there is ever lost, only re-rendered.

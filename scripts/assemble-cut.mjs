@@ -14,6 +14,11 @@
 //
 //   node scripts/assemble-cut.mjs              # media/tracer-silent.mp4
 //   node scripts/assemble-cut.mjs --timing     # print the table, build nothing
+//   node scripts/assemble-cut.mjs --sync       # recut to the recorded voiceover
+//
+// --sync is the one to use once media/tracer-voice.mp3 exists: the lengths in
+// ORDER assume a reading pace, and a real take never matches them line for
+// line. See scripts/sync-to-voice.mjs.
 // ---------------------------------------------------------------------------
 
 import { spawnSync } from 'node:child_process';
@@ -143,13 +148,14 @@ console.log('  ' + hhmmss(total).padEnd(8) + 'total\n');
 // length of the picture, instead of the timings living in two places and
 // drifting apart the first time a clip is re-captured.
 //
-// Lines sharing a segment split it in proportion to how long they actually take
-// to say, when the takes exist to measure. Splitting evenly instead put three
-// lines into 3.1 seconds each on the divergence shot while the arena and
-// landing shots sat on six to nine seconds of slack, and reported eight
-// overruns for a script whose words fit the picture with two seconds to spare.
-// The pace docs/VOICEOVER-SCRIPT.md is written for, and the word count of each
-// line, read from the script itself so the two cannot drift.
+// Lines sharing a segment split it in proportion to how long they take to say.
+// Splitting evenly instead put three lines into 3.1 seconds each on the
+// divergence shot while the arena and landing shots sat on six to nine seconds
+// of slack, and reported eight overruns for a script whose words fit the
+// picture with two seconds to spare.
+//
+// The pace and the word counts are read out of the script itself, so the two
+// cannot drift apart.
 const WPM = 160;
 const WORDS = (() => {
   const md = readFileSync(path.join(REPO, 'docs/VOICEOVER.md'), 'utf8');

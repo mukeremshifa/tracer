@@ -89,7 +89,8 @@ Every clip is silent. Lay the voiceover on its own track and cut picture to it. 
 a line needs longer than a clip runs, re-capture or re-render with a longer pause
 rather than freezing a frame, which reads as a stall.
 
-`docs/SHOTLIST.md` has the narration beats and the lines to say verbatim.
+`docs/VOICEOVER.md` has the narration, and `docs/VOICEOVER-PASTE.md` the
+version with the pauses baked in.
 
 ---
 

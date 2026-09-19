@@ -1,35 +1,49 @@
 # Submission pack
 
-## The video: 3:30, product-led
+## The video: 2:39, product-led
 
-Every judging criterion gets answered. Roughly two thirds of the picture is the
-product running; the cards carry numbers and the two lines that have to be said
-out loud.
+Two thirds of the picture is the product running. The cards carry the numbers
+and the two lines that have to be said out loud.
 
-The clips are in `media/`, built by `scripts/capture-product.mjs` (the real UI,
-driven over the DevTools protocol) and `scripts/render-clips.mjs` (the cards).
-`docs/EDIT.md` is the assembly order, `docs/SHOTLIST.md` the narration beats.
+The finished pieces are `media/tracer-silent.mp4` (picture, no audio) and
+`media/tracer-voice.mp3` (narration). Both start at 0:00 and are the same
+length, so they drop onto a timeline together. `media/tracer-preview.mp4` is the
+two muxed, for checking.
+
+Sources: `scripts/capture-product.mjs` drives the real UI over the DevTools
+protocol, `scripts/capture-client.mjs` renders the captured MCP exchange,
+`scripts/render-clips.mjs` builds the cards, `scripts/assemble-cut.mjs` cuts
+them together. `docs/EDIT.md` is the assembly order; `docs/VOICEOVER.md` is the
+script.
 
 | Time | Beat | Clip | Scores |
 |---|---|---|---|
-| 0:00-0:10 | **The robbery, cold.** No title card. A user asks an agent to summarise an article and email it to themselves. Calls land one by one, every one allowed. | `product-viewer` (head) | Impact |
-| 0:10-0:17 | **"Here is the page they were looking at."** Press *Show what the agent read*. The sweep runs and the concealed instruction ignites in place. | `product-xray` | Impact, Innovation |
-| 0:17-0:38 | **The evidence.** OWASP LLM01. EchoLeak: a zero-click prompt injection in Microsoft 365 Copilot, hidden in white-on-white text and HTML comments. Then the one that matters: 12 published defences, over 90% bypassed under adaptive attack, most of which had reported near zero. | `stats-01`, `stats-02`, `stats-03` | Impact |
-| 0:38-0:46 | **The honesty beat.** "We do not claim to stop prompt injection. Nobody has." This buys credibility for everything after it. | `honesty` | Presentation |
-| 0:46-1:03 | **The same attack, defeated.** Both runs on one clock. `read_email` held, `send_email` blocked on `destination-originates-from-page`, and the user's own email still goes out. The hard block holds the screen 2.6 seconds by design. Do not trim it. | `product-viewer` (tail) | Technical, UX |
-| 1:03-1:22 | **Try to break it.** A stranger's injection planted and run live in the Arena. The counters move. Prevented. | `product-arena` | Innovation |
-| 1:22-1:44 | **Not a sandbox.** `npx tracer prove` in a terminal: two real MCP servers, neither of them ours, and a refusal carrying the provenance chain. This is the beat that answers "is it only a sandbox?" | `product-terminal` | Impact, Technical |
-| 1:44-1:56 | **The integration surface.** The tier config you can read and diff, and the refusal as the client received it. | `product-proxy` | Technical |
-| 1:56-2:03 | **The gap.** 83% of organisations deploying agentic AI, 29% ready to secure it. | `stats-04` | Impact |
-| 2:03-2:11 | **The numbers, and the link.** 16/16 robbed unprotected, 0 landed through Tracer, 14/16 tasks still completed. Reproducible with `npm run eval`. | `closing` | Presentation |
-
-That is about 2:11 of picture. The remaining time is deliberate: hold on the
-block, let the X-ray breathe, and leave room for narration rather than filling
-every second.
+| 0:00-0:14 | **The robbery, cold.** No title card. A user asks an agent to summarise an article and email it to themselves. Every call is allowed, and a one-time passcode leaves for a stranger. | `product-viewer` (head) | Impact |
+| 0:14-0:30 | **"Here is the page it was reading."** The camera pushes in, the sweep runs, and the concealed instruction ignites in place with the rule that will stop it stamped underneath. | `product-xray` | Impact, Innovation |
+| 0:30-0:53 | **The evidence.** OWASP LLM01. EchoLeak, a zero-click injection in Microsoft 365 Copilot hidden in white-on-white text and HTML comments. Then the one that matters: 12 published defences, over 90% bypassed under adaptive attack, most of which had reported near zero. | `stats-01`, `stats-02`, `stats-03` | Impact |
+| 0:53-1:02 | **The honesty beat.** "We do not claim to stop prompt injection. Nobody has." This buys credibility for everything after it. No music under this one. | `honesty` | Presentation |
+| 1:02-1:20 | **The same attack, defeated.** Both runs on one clock. `read_email` held, `send_email` blocked on `destination-originates-from-page`, and the user's own email still goes out. | `product-viewer` (tail) | Technical, UX |
+| 1:20-1:34 | **Try to break it.** A stranger's injection, planted and run live, blocked on the same rule. | `product-arena` | Innovation |
+| 1:34-1:53 | **Sixteen classes, all measured.** The landing page: every concealment class scored in public, and the three rules, none of which ask the model to be right. | `product-landing` | Technical |
+| 1:53-2:15 | **Not a sandbox.** Tracer inside a real MCP client, in front of two real servers. The agent follows the page's instruction and the refusal arrives as the model's own error, provenance chain attached. The strongest beat in the cut. | `product-client` | Impact, Technical |
+| 2:15-2:23 | **In front of a team.** Every decision, every refused destination, and nothing that only reads was ever stopped. Labelled a preview, because it is. | `product-dashboard` | UX |
+| 2:23-2:31 | **The gap.** 83% of organisations deploying agentic AI, 29% ready to secure it. | `stats-04` | Impact |
+| 2:31-2:39 | **The numbers, and the link.** 16/16 robbed unprotected, 0 landed through Tracer, 14/16 tasks still completed. Reproducible with `npm run eval`. | `closing` | Presentation |
 
 **Every number on screen is in `docs/STATS.md`, with its source.** That file also
 lists the figures that were checked and rejected. Do not put one on screen that
 is not in it.
+
+### Captions and music
+
+The lower third is occupied during the product shots: the rule stamp and
+`DATA LEFT` at 1:10, the tool calls typing in at 2:00. Captions there cover the
+frames the video exists for. The stat cards have an empty lower third and carry
+the numbers, so caption those and leave the product footage alone; it already
+carries burned-in text doing the same job.
+
+Music, if any, belongs on the cards for the same reason. The product footage is
+evidence and plays dry. Nothing under the honesty beat at 0:53.
 
 ### Lines to say exactly
 

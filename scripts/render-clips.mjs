@@ -49,7 +49,7 @@ if (spawnSync(ffmpeg, ['-version'], { stdio: 'ignore' }).status !== 0) {
 }
 
 // Each clip: the html file under web/tools/clips, and how many frames it runs.
-// Durations are chosen for the cut in docs/SHOTLIST.md.
+// Durations are chosen for the cut in docs/EDIT.md.
 const CLIPS_LIST = JSON.parse(readFileSync(path.join(CLIPS, 'clips.json'), 'utf8'));
 
 const only = process.argv[2];

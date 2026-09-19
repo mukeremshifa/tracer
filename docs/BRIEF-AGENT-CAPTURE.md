@@ -4,8 +4,8 @@
 missing from `media/`, and neither can be produced unattended. Both need a
 visible browser or a real MCP client, so they are recorded by hand.
 
-Read `docs/EDIT.md` first for where these land in the cut, and `docs/SHOTLIST.md`
-for the narration beats around them.
+Read `docs/EDIT.md` first for where these land in the cut, and
+`docs/VOICEOVER.md` for the narration around them.
 
 **Target:** 1920x1080, 30fps, no audio, saved into `media/` as
 `product-extension.mp4` and `product-client.mp4`. Match the existing clips so

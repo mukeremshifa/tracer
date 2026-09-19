@@ -21,6 +21,28 @@ import http from 'node:http';
 const FFMPEG = process.env.FFMPEG_PATH || 'ffmpeg';
 
 /**
+ * The real pixel size of a captured JPEG frame.
+ *
+ * Worth measuring rather than assuming. Chrome's screencast honours maxWidth and
+ * maxHeight as a bounding box it fits the page into, so what arrives can be
+ * smaller than the size that was asked for, and a crop larger than the frame is
+ * rejected outright by ffmpeg. Read from the JFIF header: the SOF0 marker
+ * carries height then width as big-endian 16-bit values.
+ */
+export function jpegSize(buf) {
+  for (let i = 2; i + 9 < buf.length;) {
+    if (buf[i] !== 0xff) { i += 1; continue; }
+    const marker = buf[i + 1];
+    // SOF0..SOF3 and SOF5..SOF15 carry the frame size; skip the rest by length.
+    if (marker >= 0xc0 && marker <= 0xcf && marker !== 0xc4 && marker !== 0xc8 && marker !== 0xcc) {
+      return { w: buf.readUInt16BE(i + 7), h: buf.readUInt16BE(i + 5) };
+    }
+    i += 2 + buf.readUInt16BE(i + 2);
+  }
+  return null;
+}
+
+/**
  * Rasterise a list of SVG strings to transparent PNGs via Chrome.
  *
  * Returns the directory holding o%05d.png. Strips are capped by total pixel
@@ -93,6 +115,22 @@ function shoot(chrome, url, target, w, h) {
  * filter expression is far harder to read and to debug than doing the arithmetic
  * in Node where it already lives.
  */
+/** Keep a crop rect inside the frame, preserving its aspect and centre. */
+function clampCrop(c, real) {
+  const even = (v) => Math.max(2, Math.floor(v / 2) * 2);
+  let w = Math.min(c.w, real.w);
+  let h = Math.min(c.h, real.h);
+  // Shrinking one side to fit has to shrink the other, or the output stretches.
+  const k = Math.min(w / c.w, h / c.h);
+  w = even(c.w * k); h = even(c.h * k);
+  const cx = c.x + c.w / 2, cy = c.y + c.h / 2;
+  return {
+    w, h,
+    x: even(Math.max(0, Math.min(cx - w / 2, real.w - w))),
+    y: even(Math.max(0, Math.min(cy - h / 2, real.h - h))),
+  };
+}
+
 export function composite({ shots, cameraAt, overlayDir, out, fps, width, height }) {
   const dir = mkdtempSync(path.join(tmpdir(), 'tracer-cmp-'));
   try {
@@ -100,8 +138,13 @@ export function composite({ shots, cameraAt, overlayDir, out, fps, width, height
       writeFileSync(path.join(dir, 'src' + String(i).padStart(5, '0') + '.jpg'), buf);
     });
 
+    // What Chrome actually sent. maxWidth/maxHeight on a screencast are a
+    // bounding box it fits the page into, so frames can arrive smaller than the
+    // size requested, and ffmpeg rejects a crop larger than its input outright.
+    const real = jpegSize(shots[0]) || { w: Infinity, h: Infinity };
+
     for (let i = 0; i < shots.length; i++) {
-      const c = cameraAt(i);
+      const c = clampCrop(cameraAt(i), real);
       const src = path.join(dir, 'src' + String(i).padStart(5, '0') + '.jpg');
       const dst = path.join(dir, 'out' + String(i).padStart(5, '0') + '.png');
       const ov = overlayDir && path.join(overlayDir, 'o' + String(i).padStart(5, '0') + '.png');

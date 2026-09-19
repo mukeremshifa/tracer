@@ -1,11 +1,26 @@
 // ---------------------------------------------------------------------------
-// Capture the product, in action.
+// Capture the product, in action, and direct it.
 //
-// This drives the real UI over the Chrome DevTools Protocol -- real clicks on
-// real buttons, the real agent loop, the real X-ray -- and screenshots it at
-// 30fps. What comes out is footage of the thing itself, not a reconstruction of
-// it. If the UI changes, the footage changes with it, which is the whole reason
-// to do it this way rather than rebuilding the interface in a clip.
+// This drives the real UI over the Chrome DevTools Protocol (real clicks on
+// real buttons, the real agent loop, the real X-ray) and records it at 30fps.
+// What comes out is footage of the thing itself, not a reconstruction of it. If
+// the UI changes, the footage changes with it, which is the whole reason to do
+// it this way rather than rebuilding the interface in a clip.
+//
+// Two things are added on top of the capture, both in scripts/lib:
+//
+//   a camera   scenes shoot at 2x and output 1080p, so pushing in to half width
+//              is still native resolution rather than an upscale
+//   an overlay a spotlight matte, boxes and callouts on the element that
+//              matters, and the rule name restated at a size a phone can read
+//
+// Every rectangle either one uses is measured from the live DOM at capture
+// time, so framing follows the real element and survives a layout change.
+//
+// House rule for the overlay: a mark may only restate what is already on
+// screen. It may enlarge a rule name the UI prints at 11px, or dim the parts of
+// the frame that are not the subject. It may not introduce a claim the footage
+// does not support.
 //
 // Needs the server on :8787, Chrome, and ffmpeg.
 //
@@ -13,13 +28,16 @@
 //   node scripts/capture-product.mjs xray        # one scene
 // ---------------------------------------------------------------------------
 
-import { spawn, spawnSync } from 'node:child_process';
-import { mkdtempSync, mkdirSync, rmSync, existsSync, writeFileSync } from 'node:fs';
+import { spawn } from 'node:child_process';
+import { mkdtempSync, mkdirSync, rmSync, existsSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { WebSocket } from 'ws';
 import http from 'node:http';
+import { camera, frameOn, fullFrame } from './lib/overlay.mjs';
+import { spotlight, box, callout, ruleStamp, renderMarks } from './lib/marks.mjs';
+import { rasterise, composite } from './lib/compose.mjs';
 
 const REPO = path.resolve(fileURLToPath(new URL('..', import.meta.url)));
 const OUT = path.join(REPO, 'media');
@@ -27,6 +45,10 @@ const APP = process.env.TRACER_APP || 'http://localhost:8787';
 const PORT = 9333;
 const SITE_PORT = 4412;
 const FPS = 30;
+const W = 1920, H = 1080;          // output
+const SCALE = 2;                   // capture at 2x for camera headroom
+const CW = W * SCALE, CH = H * SCALE;
+const ASPECT = W / H;
 
 const CHROME = process.env.CHROME_PATH || [
   'C:/Program Files/Google/Chrome/Application/chrome.exe',
@@ -38,7 +60,8 @@ if (!CHROME) {
   console.error('No Chrome found. Set CHROME_PATH.');
   process.exit(1);
 }
-const FFMPEG = process.env.FFMPEG_PATH || 'ffmpeg';
+
+const pause = (ms) => new Promise((r) => setTimeout(r, ms));
 
 // --- a minimal CDP client ----------------------------------------------------
 
@@ -81,7 +104,7 @@ class Session {
   async click(selector, text) {
     const expr = text
       ? `(() => { const el = [...document.querySelectorAll(${JSON.stringify(selector)})]
-           .find(e => e.textContent.toLowerCase().includes(${JSON.stringify(text.toLowerCase())}));
+           .find(e => e.textContent.toLowerCase().includes(${JSON.stringify(String(text).toLowerCase())}));
            if (!el) return false; el.click(); return true; })()`
       : `(() => { const el = document.querySelector(${JSON.stringify(selector)});
            if (!el) return false; el.click(); return true; })()`;
@@ -94,12 +117,16 @@ class Session {
     for (;;) {
       if (await this.eval(`!!(${expr})`)) return;
       if (Date.now() - started > timeout) throw new Error('timed out waiting for ' + label);
-      await new Promise((r) => setTimeout(r, 120));
+      await pause(120);
     }
   }
-  async shot() {
-    const { data } = await this.send('Page.captureScreenshot', { format: 'png' });
-    return Buffer.from(data, 'base64');
+  /** Scroll the window from 0 to its full height on a fixed per-frame delta. */
+  async travel(steps, ms) {
+    const height = await this.eval('document.body.scrollHeight - innerHeight');
+    for (let i = 0; i <= steps; i++) {
+      await this.eval(`window.scrollTo(0, ${(i / steps).toFixed(5)} * ${height})`);
+      await pause(ms);
+    }
   }
 }
 
@@ -107,8 +134,8 @@ class Session {
  * Record with Page.startScreencast.
  *
  * The obvious approach, a loop calling Page.captureScreenshot, cannot go faster
- * than about 14fps: every frame is a full round trip that encodes a 1920x1080
- * PNG, base64s it and pushes it back over the socket. Video reads as smooth from
+ * than about 14fps: every frame is a full round trip that encodes a large PNG,
+ * base64s it and pushes it back over the socket. Video reads as smooth from
  * roughly 24fps up, so that approach produces footage that looks like a laggy
  * screen recording however carefully the scene is staged.
  *
@@ -117,8 +144,12 @@ class Session {
  * The timestamps are what make it honest: frames arrive only when something
  * changes, so they are resampled onto a fixed 30fps timeline afterwards and a
  * still moment repeats its last frame rather than the clip racing through it.
+ *
+ * `during` receives a cue object. Anything marked on it is converted from
+ * milliseconds-since-start into a frame number, which is how the camera and the
+ * overlay know when the moment they are built around actually happened.
  */
-async function screencast(s, during, fps = 30) {
+async function screencast(s, during, fps = FPS) {
   const frames = [];
   s.on('Page.screencastFrame', (p) => {
     frames.push({ data: Buffer.from(p.data, 'base64'), t: p.metadata.timestamp });
@@ -127,18 +158,16 @@ async function screencast(s, during, fps = 30) {
   });
 
   await s.send('Page.startScreencast', {
-    format: 'jpeg',
-    quality: 92,
-    maxWidth: 1920,
-    maxHeight: 1080,
-    everyNthFrame: 1,
+    format: 'jpeg', quality: 95, maxWidth: CW, maxHeight: CH, everyNthFrame: 1,
   });
 
+  const at = {};
   const t0 = Date.now();
-  await during();
+  const cue = { mark: (name) => { at[name] = Date.now() - t0; } };
+  await during(cue);
   // A beat after the last interaction, so the final state is actually captured
   // rather than the stream being cut while the page is still settling.
-  await new Promise((r) => setTimeout(r, 400));
+  await pause(400);
   await s.send('Page.stopScreencast');
 
   if (!frames.length) throw new Error('screencast produced no frames');
@@ -149,14 +178,17 @@ async function screencast(s, during, fps = 30) {
   const span = Math.max((Date.now() - t0) / 1000, frames[frames.length - 1].t - base);
   const total = Math.max(1, Math.round(span * fps));
 
-  const out = [];
+  const shots = [];
   let i = 0;
   for (let n = 0; n < total; n++) {
     const want = n / fps;
     while (i + 1 < frames.length && frames[i + 1].t - base <= want) i += 1;
-    out.push(frames[i].data);
+    shots.push(frames[i].data);
   }
-  return { shots: out, fps };
+
+  const cues = {};
+  for (const [k, v] of Object.entries(at)) cues[k] = Math.round((v / 1000) * fps);
+  return { shots, fps, cues };
 }
 
 async function launch(url, extraArgs = []) {
@@ -167,7 +199,8 @@ async function launch(url, extraArgs = []) {
       '--headless=new', '--disable-gpu', '--no-first-run', '--no-default-browser-check',
       ...extraArgs,
       `--user-data-dir=${profile}`, `--remote-debugging-port=${PORT}`,
-      '--window-size=1920,1080', '--hide-scrollbars', '--force-device-scale-factor=1',
+      `--window-size=${W},${H}`, '--hide-scrollbars',
+      `--force-device-scale-factor=${SCALE}`,
       '--force-color-profile=srgb', '--font-render-hinting=none',
       '--disable-features=IsolateOrigins,site-per-process',
       url,
@@ -178,7 +211,7 @@ async function launch(url, extraArgs = []) {
   // Wait for the debugger, then attach to the page target.
   let page = null;
   for (let i = 0; i < 60 && !page; i++) {
-    await new Promise((r) => setTimeout(r, 400));
+    await pause(400);
     try {
       const list = await fetch(`http://127.0.0.1:${PORT}/json/list`).then((r) => r.json());
       page = list.find((t) => t.type === 'page' && t.webSocketDebuggerUrl);
@@ -186,11 +219,21 @@ async function launch(url, extraArgs = []) {
   }
   if (!page) throw new Error('Chrome never exposed a page target');
 
-  const ws = new WebSocket(page.webSocketDebuggerUrl, { maxPayload: 256 * 1024 * 1024 });
+  const ws = new WebSocket(page.webSocketDebuggerUrl, { maxPayload: 512 * 1024 * 1024 });
   await new Promise((res, rej) => { ws.once('open', res); ws.once('error', rej); });
   const s = new Session(ws);
   await s.send('Page.enable');
   await s.send('Runtime.enable');
+
+  // Pin the viewport rather than trusting --window-size. Chrome's window size
+  // includes its own chrome, so a 1920x1080 window gives a 1902x984 viewport:
+  // not 16:9, and not what the camera arithmetic assumes. Overriding the
+  // metrics makes capture exactly W x H CSS pixels at SCALE device pixels, so a
+  // rect measured in the page maps onto captured pixels by one multiply.
+  await s.send('Emulation.setDeviceMetricsOverride', {
+    width: W, height: H, deviceScaleFactor: SCALE, mobile: false,
+  });
+
   return {
     s,
     close() {
@@ -202,30 +245,82 @@ async function launch(url, extraArgs = []) {
 }
 
 /**
- * Screenshot on a fixed cadence while `during` runs.
+ * Turn a scene's result into an mp4.
  *
- * Capture is wall-clock rather than frame-locked: we are filming a live UI whose
- * animations are driven by real timers, so the honest thing is to sample it at a
- * steady rate and accept the frames that result. Dropped frames show up as a
- * slightly short clip, never as a stutter.
+ * A scene with no camera and no marks still comes through here, with an
+ * identity camera, so there is one encode path rather than two that can drift.
  */
-function encode(shots, id, fps) {
-  const dir = mkdtempSync(path.join(tmpdir(), 'tracer-pf-'));
-  shots.forEach((buf, i) => writeFileSync(path.join(dir, 'f' + String(i).padStart(5, '0') + '.jpg'), buf));
-  mkdirSync(OUT, { recursive: true });
-  const mp4 = path.join(OUT, id + '.mp4');
-  const r = spawnSync(
-    FFMPEG,
-    ['-y', '-framerate', fps.toFixed(3), '-i', path.join(dir, 'f%05d.jpg'),
-     '-c:v', 'libx264', '-pix_fmt', 'yuv420p', '-crf', '18', '-preset', 'medium', mp4],
-    { stdio: 'ignore' },
-  );
-  rmSync(dir, { recursive: true, force: true });
-  if (r.status !== 0) throw new Error('ffmpeg failed for ' + id);
-  return { mp4, seconds: shots.length / fps };
+async function render({ id, shots, fps, cam, marks }) {
+  const cameraAt = cam || (() => fullFrame(CW, CH));
+
+  let overlayDir = null;
+  if (marks && marks.length) {
+    process.stdout.write(' overlay');
+    const svgs = [];
+    for (let i = 0; i < shots.length; i++) svgs.push(renderMarks(marks, i, { w: W, h: H }));
+    overlayDir = await rasterise(svgs, { w: W, h: H, chrome: CHROME });
+  }
+
+  process.stdout.write(' compose');
+  try {
+    return composite({
+      shots, cameraAt, overlayDir, fps, width: W, height: H,
+      out: path.join(OUT, id + '.mp4'),
+    });
+  } finally {
+    if (overlayDir) rmSync(overlayDir, { recursive: true, force: true });
+  }
 }
 
-const pause = (ms) => new Promise((r) => setTimeout(r, ms));
+/**
+ * Map a rect measured in CSS pixels into output space, through the camera.
+ *
+ * Marks are drawn on the finished 1920x1080 frame, but the rects they point at
+ * were measured in the page, so every mark needs this. Returned as a function
+ * of frame index, because the camera moves.
+ */
+const through = (cam, r) => (n) => {
+  if (!r) return null;
+  const c = cam(n);
+  const k = W / c.w;
+  return { x: (r.x * SCALE - c.x) * k, y: (r.y * SCALE - c.y) * k, w: r.w * SCALE * k, h: r.h * SCALE * k };
+};
+
+/** Measure the blocked call, in CSS pixels. */
+const blockedRect = (s) => s.eval(`(() => {
+  const row = [...document.querySelectorAll('.call')]
+    .find((e) => e.querySelector('.call-dot.block'));
+  if (!row) return null;
+  const b = row.getBoundingClientRect();
+  return { x: b.left, y: b.top, w: b.width, h: b.height };
+})()`);
+
+/**
+ * Read the rule name off the blocked call.
+ *
+ * Not from .rule-chip: that reflects whichever call is selected, which defaults
+ * to one in the unprotected pane whose chip reads "unprotected", a word that is
+ * not a rule at all and that an earlier version captioned a clip with.
+ *
+ * The blocked row is found by its dot class rather than by matching text: the
+ * rendered text is letter-spaced, so a regex over textContent sees
+ * "de tination-originate -from-page" and matches nothing useful.
+ */
+const readRule = (s) => s.eval(`(() => {
+  const row = [...document.querySelectorAll('.call')]
+    .find((e) => e.querySelector('.call-dot.block'));
+  const meta = row && row.querySelector('.call-meta');
+  if (!meta || !meta.textContent.includes('\\u00B7')) return null;
+  return meta.textContent.split('\\u00B7').pop().trim();
+})()`);
+
+/** The rule name is the one string the overlay restates, so it must be real. */
+function assertRule(rule) {
+  if (!rule || !/^[a-z]+(?:-[a-z]+){2,}$/.test(rule)) {
+    throw new Error('no rule name on the blocked call, got: ' + JSON.stringify(rule));
+  }
+  return rule;
+}
 
 // --- the scenes --------------------------------------------------------------
 
@@ -238,17 +333,19 @@ const SCENES = {
   // stops the content script importing the analyser. That is the range being
   // correct rather than the extension being broken, so the scene serves the
   // same markup from a plain static host instead.
+  //
+  // Known to fail unattended on this setup: Chrome accepts --load-extension and
+  // then does not install the unpacked MV3 build, so no isolated world is
+  // created and the content script never runs. Verified in both headless and
+  // headed mode by listing execution contexts: only main-world ones appear. The
+  // extension is fine when loaded by hand through chrome://extensions, which is
+  // what docs/BRIEF-AGENT-CAPTURE.md covers. Left in, and left out of the
+  // default run, so the failure is documented rather than rediscovered.
   async extension() {
     const dist = path.join(REPO, 'adapters/browser/dist');
     if (!existsSync(path.join(dist, 'manifest.json'))) {
       throw new Error('adapters/browser/dist missing. Run: node adapters/browser/build.mjs');
     }
-    // Known to fail unattended on this setup: Chrome accepts --load-extension
-    // and then does not install it, so no isolated world is created and the
-    // content script never runs. Verified in both headless and headed mode by
-    // listing execution contexts: only main-world ones appear. The extension
-    // itself is fine when loaded by hand through chrome://extensions, which is
-    // what docs/BRIEF-AGENT-CAPTURE.md covers.
 
     const html = await fetch(APP + '/range/white-on-white.html').then((r) => r.text());
     const site = http.createServer((req, res) => {
@@ -262,10 +359,8 @@ const SCENES = {
       `--load-extension=${dist}`,
     ]);
     try {
-      // The content script analyses on load and stamps what it finds.
       await s.waitFor('document.querySelectorAll("[data-tracer-span]").length > 0', 30000, 'analyser');
       await pause(1800);
-
       await s.eval(`(() => {
         const el = document.querySelector('[data-tracer-concealed="1"]');
         if (el) el.scrollIntoView({ block: 'center' });
@@ -273,8 +368,9 @@ const SCENES = {
       })()`);
       await pause(900);
 
-      const cap = await screencast(s, async () => {
+      const cap = await screencast(s, async (cue) => {
         await pause(1400);
+        cue.mark('reveal');
         // What the toolbar button does, done directly: headless has no toolbar,
         // and the popup is a separate target that cannot be filmed with the page.
         await s.eval(`(async () => {
@@ -289,21 +385,49 @@ const SCENES = {
       site.close();
     }
   },
-  // The whole sandbox story: load the recorded run, watch both agents play out
-  // side by side, and let the provenance line draw itself on the block.
+
+  // The whole sandbox story: run both agents and watch them diverge, the
+  // unprotected one paying out while the protected one holds and then blocks.
+  //
+  // The camera stays wide for this one. The divergence is a comparison, and a
+  // comparison needs both columns in frame; pushing in on either half would be
+  // filming one side of an argument. The marks wait for the block, then name it.
   async viewer() {
     const { s, close } = await launch(APP + '/#sandbox');
     try {
-      await s.waitFor('document.querySelector(".viewer-head, .split")', 30000, 'viewer');
-      await pause(1200);
-      const cap = await screencast(s, async () => {
-        await pause(800);
-        await s.click('button', 'play recorded run');
-        // Both runs play on one clock; the protected side holds ~2.6s on the
-        // hard block, and the provenance line draws itself 420ms later.
-        await pause(26000);
+      await s.waitFor('document.querySelector(".split")', 30000, 'sandbox');
+      await pause(1400);
+
+      const cap = await screencast(s, async (cue) => {
+        await pause(900);
+        await s.click('button', 'run both agents');
+        // Both runs play on one clock. Hold once the refusal lands: that pause
+        // is the moment the whole project exists for.
+        await s.waitFor('document.querySelector(".call .call-dot.block")', 60000, 'the block');
+        cue.mark('block');
+        await pause(7000);
       });
-      return { id: 'product-viewer', ...cap };
+
+      const rule = assertRule(await readRule(s));
+      const blocked = await blockedRect(s);
+
+      const n = cap.shots.length;
+      const blk = cap.cues.block;
+      const cam = camera([{ at: 0, rect: fullFrame(CW, CH) }], { width: CW, height: CH, aspect: ASPECT });
+      const marks = [
+        // No callout on this one. The blocked row sits in the right-hand
+        // column with about 2px of gutter beside it and the unprotected pane
+        // immediately to its left, so a horizontal label has nowhere to go that
+        // is not on top of something. The box says which row, the UI already
+        // prints BLOCKED on it, and the stamp names the rule: a callout would
+        // only repeat one of the three.
+        box({ rect: through(cam, blocked), from: blk + 10, to: blk + 30, out: n - 26, width: 3, radius: 6 }),
+        ruleStamp({
+          text: rule, kicker: 'the agent was blocked on',
+          from: blk + 44, to: blk + 68, out: n - 14, x: 96, y: H - 170, size: 34,
+        }),
+      ];
+      return { id: 'product-viewer', ...cap, cam, marks };
     } finally {
       close();
     }
@@ -314,89 +438,174 @@ const SCENES = {
   async xray() {
     const { s, close } = await launch(APP + '/#sandbox');
     try {
-      await s.waitFor('document.querySelector(".split")', 30000, 'viewer');
-      await s.waitFor(
-        'document.querySelector("iframe") && document.querySelector(".btn.primary-xray, button")',
-        30000,
-        'page frame',
-      );
+      await s.waitFor('document.querySelector(".split")', 30000, 'sandbox');
+      await s.waitFor('document.querySelector("iframe")', 30000, 'page frame');
+      await pause(1200);
 
-      // Load the run before revealing anything. Without it the right half of
-      // the frame is an empty panel telling the viewer to press a button, which
-      // wastes half the screen on the one scene that has to sell the mechanism.
-      await s.click('button', 'play recorded run');
-      await s.waitFor('document.querySelectorAll(".call-row, .callrow, .call").length > 2', 30000, 'calls');
-      await pause(2500);
+      // Run first, so the right pane carries the block the overlay names rather
+      // than an empty panel telling the viewer to press a button. Wait for the
+      // block itself, not just for calls: the rule name is read off that row.
+      await s.click('button', 'run both agents');
+      await s.waitFor('document.querySelector(".call .call-dot.block")', 60000, 'the blocked call');
+      await pause(2000);
+      const rule = assertRule(await readRule(s));
 
-      // Frame the shot on the span that is about to ignite. Two scrolls are
-      // needed and they are not interchangeable: the iframe is a fixed-height
-      // window onto a taller page, so scrolling the outer document moves the
-      // frame around the screen while scrolling inside it moves the article
-      // within the frame. An earlier version only did the first, with a
-      // hardcoded offset, and clipped the payload against the frame's edge.
-      await s.eval(`(() => {
+      // Frame on the span that is about to ignite. Two scrolls are needed and
+      // they are not interchangeable: the iframe is a fixed-height window onto a
+      // taller page, so scrolling the outer document moves the frame around the
+      // screen while scrolling inside it moves the article within the frame.
+      const framed = await s.eval(`(() => {
         const frame = document.querySelector('iframe');
         const doc = frame && frame.contentDocument;
         const span = doc && doc.querySelector('[data-tracer-concealed="1"], [data-tracer-instruction="1"]');
         if (!frame || !span) return false;
-
-        // Inside the frame: sit the span just below the middle, so the article
-        // above it still reads as an ordinary page.
         const win = frame.contentWindow;
         const top = span.getBoundingClientRect().top + win.scrollY;
         win.scrollTo(0, Math.max(0, top - frame.clientHeight * 0.55));
-
-        // Outside: bring the frame itself fully into view, header included.
         const shellTop = frame.getBoundingClientRect().top + window.scrollY;
         window.scrollTo(0, Math.max(0, shellTop - 90));
         return true;
       })()`);
+      if (!framed) throw new Error('no concealed span to frame on');
       await pause(900);
 
+      // The X-ray grows the span: it adds a "HIDDEN FROM YOU" label through a
+      // ::before and lifts the payload out of the page flow, so the box to frame
+      // on does not exist until the reveal has run. Measure it by revealing
+      // once, reading the real rect, then putting the page back. What gets
+      // filmed is the second reveal, with the camera already knowing where to
+      // land.
+      const measure = `(() => {
+        const frame = document.querySelector('iframe');
+        const fb = frame.getBoundingClientRect();
+        const span = frame.contentDocument
+          .querySelector('[data-tracer-concealed="1"], [data-tracer-instruction="1"]');
+        const b = span.getBoundingClientRect();
+        return { x: fb.left + b.left, y: fb.top + b.top, w: b.width, h: b.height };
+      })()`;
+      await s.click('button', 'show what the agent read');
+      await pause(1500);
+      const target = await s.eval(measure);
+      await s.click('button', 'showing what the agent read');
+      await pause(1200);
+
+      const cap = await screencast(s, async (cue) => {
+        await pause(1400);
+        cue.mark('reveal');
+        await s.click('button', 'show what the agent read');
+        await pause(6200);
+      });
+
+      const n = cap.shots.length;
+      const rev = cap.cues.reveal;
+      // Hold wide, push in as the sweep runs, hold tight on the ignited payload.
+      // maxZoom stops the crop going tighter than a 2x capture can carry.
+      const onSpan = frameOn(target, {
+        aspect: ASPECT, pad: 0.42, width: CW, height: CH, scale: SCALE, maxZoom: SCALE,
+      });
+      const cam = camera([
+        { at: 0, rect: fullFrame(CW, CH) },
+        { at: Math.max(1, rev - 8), rect: fullFrame(CW, CH) },
+        { at: rev + 34, rect: onSpan },
+        { at: n - 1, rect: onSpan },
+      ], { width: CW, height: CH, aspect: ASPECT });
+
+      const at = through(cam, target);
+      const marks = [
+        spotlight({ rect: at, from: rev + 30, to: rev + 48, hold: n - 26, out: n - 6, strength: 0.66, radius: 6 }),
+        box({ rect: at, from: rev + 34, to: rev + 56, out: n - 20, width: 3, radius: 6 }),
+        callout({
+          anchor: at, label: 'CONCEALED', sub: 'white-on-white, read by the model',
+          from: rev + 50, to: rev + 76, out: n - 22, len: 120, size: 28,
+        }),
+        ruleStamp({
+          text: rule, kicker: 'the agent was blocked on',
+          from: rev + 82, to: rev + 104, out: n - 14, x: 96, y: H - 170, size: 34,
+        }),
+      ];
+      return { id: 'product-xray', ...cap, cam, marks };
+    } finally {
+      close();
+    }
+  },
+
+  // The landing page: what the project claims, with the evidence under it.
+  //
+  // This replaces the old #proxy scene, which no longer exists. That hash now
+  // redirects here, because the landing page absorbed both the proxy and
+  // extension sections, and it is the better shot anyway: a live sandbox, the
+  // three rules, the sixteen attack classes, and the two real MCP servers.
+  //
+  // Filmed as one travel down the page rather than a cut between bands. The page
+  // is around 8000px tall and its argument is cumulative, so the scroll is the
+  // scene. The delta is fixed per frame rather than smooth-scrolled, which eases
+  // at both ends and reads as a page that cannot decide whether it is moving.
+  async landing() {
+    // Explicitly #home: the bare root resolves through the alias table on a
+    // hashchange, and the scene can attach before that has settled.
+    const { s, close } = await launch(APP + '/#home');
+    try {
+      await s.waitFor('document.querySelector(".band")', 45000, 'landing page');
+      await pause(2600);
+      const cap = await screencast(s, async () => {
+        await s.travel(340, 26);
+        await pause(1400);
+      });
+      return { id: 'product-landing', ...cap };
+    } finally {
+      close();
+    }
+  },
+
+  // The dashboard: refusals as an operations surface rather than as a story.
+  //
+  // This replaces the old #arena scene. It is the clip that says the project is
+  // something you would run rather than something you watch once: recent
+  // decisions, the destinations that were refused, and the tier breakdown
+  // showing that nothing which only reads was ever stopped.
+  //
+  // The page labels itself a preview of a console that does not ship yet. That
+  // label stays in frame. It is honest disclosure, and an assessor will look
+  // for exactly that.
+  async dashboard() {
+    const { s, close } = await launch(APP + '/#dashboard');
+    try {
+      await s.waitFor('document.querySelector(".panel")', 30000, 'dashboard');
+      await pause(2400);
       const cap = await screencast(s, async () => {
         await pause(1200);
-        await s.click('button', 'show what the agent read');
-        await pause(5200);
+        await s.travel(160, 30);
+        await pause(2200);
       });
-      return { id: 'product-xray', ...cap };
+      return { id: 'product-dashboard', ...cap };
     } finally {
       close();
     }
   },
 
-  // The integration surface: what you actually put in front of your own agent.
-  async proxy() {
-    const { s, close } = await launch(APP + '/#proxy');
-    try {
-      await s.waitFor('document.querySelector(".panel")', 30000, 'proxy page');
-      await pause(2000);
-      const cap = await screencast(s, async () => {
-        // A slow scroll down the page: the tier table, then the real refusal.
-        const steps = 150;
-        for (let i = 0; i <= steps; i++) {
-          await s.eval(`window.scrollTo(0, ${i} * (document.body.scrollHeight - innerHeight) / ${steps})`);
-          await pause(60);
-        }
-        await pause(1500);
-      });
-      return { id: 'product-proxy', ...cap };
-    } finally {
-      close();
-    }
-  },
-
-  // Someone else's attack, run live against both agents.
+  // Somebody else's attack, planted and run live.
+  //
+  // The arena folded into the sandbox behind a "Write your own" toggle, so the
+  // scene opens that before waiting on the textarea it types into. An earlier
+  // version waited on a textarea that the default tab never renders, and timed
+  // out.
   async arena() {
-    const { s, close } = await launch(APP + '/#arena');
+    const { s, close } = await launch(APP + '/#sandbox');
     try {
-      await s.waitFor('document.querySelector("textarea")', 30000, 'arena');
-      await pause(2000);
-      const cap = await screencast(s, async () => {
+      await s.waitFor('document.querySelector(".split")', 30000, 'sandbox');
+      await pause(1500);
+      await s.click('button', 'write your own');
+      await s.waitFor('document.querySelector("textarea")', 20000, 'the injection box');
+      await pause(1200);
+
+      const cap = await screencast(s, async (cue) => {
         await pause(1000);
         await s.click('button', 'plant it in a page');
         await pause(3500);
         await s.click('button', 'run both agents');
-        await pause(14000);
+        await s.waitFor('document.querySelector(".call .call-dot.block")', 60000, 'the block');
+        cue.mark('block');
+        await pause(5000);
       });
       return { id: 'product-arena', ...cap };
     } finally {
@@ -407,8 +616,12 @@ const SCENES = {
 
 // --- run ---------------------------------------------------------------------
 
+// The extension scene is excluded from the default run: it cannot be produced
+// unattended here (see its comment) and is captured by hand instead.
+const DEFAULT = ['viewer', 'xray', 'landing', 'dashboard', 'arena'];
+
 const only = process.argv[2];
-const names = only ? [only] : Object.keys(SCENES);
+const names = only ? [only] : DEFAULT;
 for (const name of names) {
   if (!SCENES[name]) {
     console.error('Unknown scene: ' + name + '. Known: ' + Object.keys(SCENES).join(', '));
@@ -416,13 +629,17 @@ for (const name of names) {
   }
 }
 
+mkdirSync(OUT, { recursive: true });
+let failed = 0;
 for (const name of names) {
-  process.stdout.write(name.padEnd(10));
+  process.stdout.write(name.padEnd(11));
   try {
-    const { id, shots, fps } = await SCENES[name]();
-    const { seconds } = encode(shots, id, fps);
-    console.log(`${shots.length} frames @ ${fps.toFixed(1)}fps -> media/${id}.mp4  (${seconds.toFixed(1)}s)`);
+    const scene = await SCENES[name]();
+    const { seconds } = await render(scene);
+    console.log(` -> media/${scene.id}.mp4  (${seconds.toFixed(1)}s, ${scene.shots.length} frames)`);
   } catch (err) {
-    console.log('FAILED - ' + err.message);
+    failed += 1;
+    console.log(' FAILED - ' + err.message);
   }
 }
+if (failed) process.exitCode = 1;

@@ -54,12 +54,12 @@ const ORDER = [
   { clip: 'stats-03-defences',                              vo: ['07'] },
   { clip: 'honesty',                                        vo: ['08'], note: 'hold, no music' },
   { clip: 'product-viewer',    from: 10,         hold: 11,  vo: ['09', '10', '11'], note: 'the divergence' },
-  { clip: 'product-arena',                                  vo: ['12'] },
-  { clip: 'product-landing',                                vo: ['13'] },
-  { clip: 'product-client',                                 vo: ['14'], note: 'the strongest beat' },
-  { clip: 'product-dashboard',                              vo: ['15'] },
-  { clip: 'stats-04-gap',                        hold: 1,   vo: ['16'] },
-  { clip: 'closing',                             hold: 1,   vo: ['17'], note: 'last 2s silent' },
+  { clip: 'product-arena',     to: 18,                      vo: ['12'] },
+  { clip: 'product-landing',   to: 20,                      vo: ['13', '14'] },
+  { clip: 'product-client',                      hold: 2,   vo: ['15', '16'], note: 'the strongest beat' },
+  { clip: 'product-dashboard', to: 9,                       vo: ['17'] },
+  { clip: 'stats-04-gap',                                   vo: ['18'] },
+  { clip: 'closing',                             hold: 1,   vo: ['19'], note: 'last 2s silent' },
 ];
 
 const duration = (file) => {

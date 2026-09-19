@@ -151,41 +151,55 @@ model speed up or add artefacts, so the script uses them nowhere by default.
 **12** `over product-arena`
 
 > You do not have to take our attacks for it. Anyone can write their own,
-> plant it in a live page, and run it against both agents. Every attempt is
-> scored in public, including anything that gets through.
+> plant it in a live page, and watch it run against both agents. This one
+> was submitted by a visitor, and it is blocked on the same rule.
 
 ---
 
 **13** `over product-landing`
 
-> Sixteen classes of concealment, every one of them measured. Three rules,
-> and none of them ask the model to be right about anything.
+> Every attempt is scored in public, including anything that gets through.
+> Sixteen classes of concealment, and every one of them measured.
 
 ---
 
 **14** `over product-client. This is the beat that answers "is this only a demo?"`
 
-> This is not a sandbox. Tracer inside a real client, in front of two real
-> servers. The agent follows the page's instruction, and the refusal comes
-> back as the model's own error, with the whole provenance chain attached.
+> Three rules, and none of them ask the model to be right about anything. It
+> assumes the model gets fooled, and makes the attack fail anyway.
 
 ---
 
 **15** `over product-dashboard`
+
+> This is not a sandbox. Two real MCP servers, a hostile page, and the same
+> task run twice. Without Tracer, the file lands in the attacker's folder.
+
+---
+
+**16** `over stats-04-gap`
+
+> With Tracer in between, it does not. The agent follows the page's
+> instruction, and the refusal comes back as the model's own error, with the
+> whole provenance chain attached.
+
+---
+
+**17** `over closing`
 
 > Across a team, it is infrastructure. Every decision, every refused
 > destination... and nothing that only reads was ever stopped.
 
 ---
 
-**16** `over stats-04-gap`
+**18** `over stats-04-gap`
 
 > Eighty-three percent plan to deploy agentic AI. Twenty-nine percent feel
 > ready to secure it.
 
 ---
 
-**17** `over closing`
+**19** `over closing`
 
 > Sixteen out of sixteen attacks robbed an unprotected agent. Zero got
 > through Tracer.

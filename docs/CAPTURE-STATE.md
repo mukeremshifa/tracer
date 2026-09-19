@@ -99,15 +99,17 @@ that throws rather than ship a wrong caption.
 
 ## Em dashes
 
-The standing preference is that em dashes stay very rare, and none in the video.
-A clip is **not** re-shot for punctuation alone, only when it is being
-re-rendered anyway.
+Done. None remain in any rendered surface: the interface, the card clips, the
+X-ray label, and the closing card's citation line.
 
-- Fixed: `shared/xray.js` rendered `HIDDEN FROM YOU \2014 S13` on camera. Now a
-  middot. This was a product change, and `npm run verify` passes 91/91.
-- Remaining `&mdash;` in `web/src/components/`: About (18), Scorecard (10),
-  Sandbox (4), Panels (3), Dashboard (2), Evidence (1). Fix these **only** in
-  components whose scene is being re-shot anyway.
+What is left is six bare em dashes used as a **placeholder glyph** for an empty
+table cell. That is typography rather than punctuation in a sentence, so it
+stays. One of them, in `Sandbox.jsx`, is also a `split()` delimiter, and
+changing it would alter behaviour rather than wording.
+
+The rewrites were not a search and replace. A dash joining two clauses became a
+full stop or a comma depending on how close the clauses were, and a dash
+introducing a gloss became a colon.
 
 ---
 
@@ -140,8 +142,11 @@ request.
 - [x] `docs/EDIT.md` rewritten around the 13-beat cut
 - [x] `media/product-proxy.mp4` deleted: its page no longer exists
 
-All five verified 1920x1080 at exactly 30/1. Nothing outstanding for the
-automated scenes.
+- [x] Em dashes out of the interface and the cards, clips re-shot
+- [x] Closing card corrected from 89 to 91 assertions, and `docs/STATS.md` with it
+
+All five product scenes and all eight cards verified at 1920x1080, 30/1.
+Nothing outstanding for the automated work.
 
 Still manual, briefed in `docs/BRIEF-AGENT-CAPTURE.md`: the extension scene
 (Chrome accepts `--load-extension` and then does not install the unpacked MV3

@@ -17,7 +17,7 @@
 // ---------------------------------------------------------------------------
 
 import { spawnSync } from 'node:child_process';
-import { mkdtempSync, rmSync, writeFileSync, existsSync } from 'node:fs';
+import { mkdtempSync, rmSync, writeFileSync, readFileSync, existsSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -48,12 +48,12 @@ const FFPROBE = process.env.FFPROBE_PATH || 'ffprobe';
 // speeding the voice up.
 const ORDER = [
   { clip: 'product-viewer',    from: 0,  to: 10, hold: 3,   vo: ['01', '02'], note: 'the robbery' },
-  { clip: 'product-xray',                        hold: 1.5, vo: ['03', '04'], note: 'the reveal' },
-  { clip: 'stats-01-owasp',                                 vo: ['05'] },
+  { clip: 'product-xray',                        hold: 7,   vo: ['03', '04'], note: 'the reveal' },
+  { clip: 'stats-01-owasp',                      hold: 1.5, vo: ['05'] },
   { clip: 'stats-02-echoleak',                   hold: 1,   vo: ['06'] },
   { clip: 'stats-03-defences',                              vo: ['07'] },
   { clip: 'honesty',                                        vo: ['08'], note: 'hold, no music' },
-  { clip: 'product-viewer',    from: 10,         hold: 6,   vo: ['09', '10', '11'], note: 'the divergence' },
+  { clip: 'product-viewer',    from: 10,         hold: 11,  vo: ['09', '10', '11'], note: 'the divergence' },
   { clip: 'product-arena',                                  vo: ['12'] },
   { clip: 'product-landing',                                vo: ['13'] },
   { clip: 'product-client',                                 vo: ['14'], note: 'the strongest beat' },
@@ -122,6 +122,25 @@ console.log('  ' + hhmmss(total).padEnd(8) + 'total\n');
 // lines into 3.1 seconds each on the divergence shot while the arena and
 // landing shots sat on six to nine seconds of slack, and reported eight
 // overruns for a script whose words fit the picture with two seconds to spare.
+// The pace docs/VOICEOVER-SCRIPT.md is written for, and the word count of each
+// line, read from the script itself so the two cannot drift.
+const WPM = 160;
+const WORDS = (() => {
+  const md = readFileSync(path.join(REPO, 'docs/VOICEOVER.md'), 'utf8');
+  const out = {};
+  const re = /^\*\*(\d{2})\*\*(.*)$/gm;
+  let m;
+  while ((m = re.exec(md))) {
+    const rest = md.slice(m.index + m[0].length);
+    const stop = rest.search(/^\*\*\d{2}\*\*|^## /m);
+    const body = stop === -1 ? rest : rest.slice(0, stop);
+    const text = body.split(/\r?\n/).filter((l) => l.trim().startsWith('>'))
+      .map((l) => l.replace(/^\s*>\s?/, '').trim()).join(' ').trim();
+    if (text) out[m[1]] = text.split(/\s+/).length;
+  }
+  return out;
+})();
+
 const spoken = (id) => {
   const f = path.join(MEDIA, 'vo', 'vo-' + id + '.mp3');
   if (!existsSync(f)) return null;
@@ -133,11 +152,14 @@ const cues = { total: Number(total.toFixed(3)), lines: {} };
 for (const s of timed) {
   const takes = s.vo.map(spoken);
   const measured = takes.every((t) => t != null);
+  // No takes yet: estimate from the words, at the pace the script is written
+  // for. Without this the shares are equal, which puts a 24 word line and a 12
+  // word line in the same slot and reports a gap that does not exist.
+  const est = s.vo.map((v) => (WORDS[v] || 12) / WPM * 60);
+  const lens = measured ? takes : est;
   // Leave a breath between lines that share a shot, and after the last one.
   const gap = 0.35;
-  const weights = measured
-    ? takes.map((t) => t + gap)
-    : s.vo.map(() => 1);
+  const weights = lens.map((t) => t + gap);
   const sum = weights.reduce((a, b) => a + b, 0);
 
   let at = s.at;
@@ -147,7 +169,7 @@ for (const s of timed) {
       at: Number(at.toFixed(3)),
       until: Number((at + share).toFixed(3)),
       clip: s.clip,
-      ...(measured ? { spoken: Number(takes[i].toFixed(2)) } : {}),
+      ...(measured ? { spoken: Number(takes[i].toFixed(2)) } : { estimated: Number(est[i].toFixed(2)) }),
     };
     at += share;
   });

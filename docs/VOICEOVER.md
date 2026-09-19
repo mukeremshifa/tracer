@@ -20,13 +20,17 @@ In ElevenLabs, **Voice Library**, filter to English, then audition against this
 brief: a security engineer explaining something they find genuinely alarming,
 not a product marketer. Calm, low, unhurried. No smile in the voice.
 
-Good defaults, in order of preference:
+`node scripts/audition-voices.mjs` generates line 08 in five voices and prints
+the measured words per minute for each. Pace is the part that can be judged
+without listening, and it is what decides whether a line fits its shot: 140 to
+155 is documentary, past 170 is an advertising read.
 
 | Voice | Why |
 |---|---|
-| **Adam** | Low, measured, documentary. The safest choice for this material. |
-| **Daniel** | British, news-read. Good if you want the "this is a report" framing. |
-| **Charlie** | Warmer, more conversational. Use if Adam feels too heavy. |
+| **Daniel** | Chosen. "Steady Broadcaster", British, informative. Reads line 08 at **144 wpm**. |
+| **Adam** | 169 wpm. Labelled "Dominant, Firm", tagged social_media. Closer to an ad read. |
+| **George** | 173 wpm. Warm storyteller, if Daniel feels too formal. |
+| **Eric** | 194 wpm. Too fast for this; every line would need trimming. |
 
 Avoid anything described as "upbeat", "energetic", "narration for ads", or any
 voice with noticeable vocal fry. The content is doing the persuading; the
@@ -43,7 +47,7 @@ and you are not latency-bound here).
 | Similarity | **80** | Keeps the voice consistent between paragraphs you may re-generate individually. |
 | Style exaggeration | **0** | Anything above 0 pushes it towards advertising read. |
 | Speaker boost | **on** | Slight presence lift, helps it sit over music. |
-| Format | **MP3 192kbps 44.1kHz** or WAV | Either is fine for CapCut. |
+| Format | **MP3 128kbps 44.1kHz** | 192 needs a paid tier, and the difference is inaudible for one voice under music. |
 
 `scripts/make-voiceover.mjs` does the generating. It sends one request per line
 rather than one for the whole script, so a bad take can be re-rolled without

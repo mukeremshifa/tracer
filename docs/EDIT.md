@@ -9,6 +9,12 @@ Two kinds of clip, and the ratio matters:
 DevTools Protocol: real clicks, the real agent loop, the real X-ray. Regenerate
 with `node scripts/capture-product.mjs`. If the UI changes, so does the footage.
 
+A camera and an overlay are added on top of the capture, never inside it: scenes
+shoot at 2x so a push-in stays native resolution, and marks are drawn on the
+finished frame from rectangles measured in the live DOM. The overlay may only
+restate what is already on screen, for instance enlarging a rule name the UI
+prints at 11px. It may not introduce a claim the footage does not support.
+
 One product clip is captured differently. `product-client.mp4` is Tracer inside
 a real MCP client (Claude Code over `claude -p`), and it is rendered from a
 captured session (the real proxy banner, the real tool calls, the real refusal)
@@ -31,44 +37,49 @@ deck of statistics is a case study, and this is a product.
 | # | Clip | Runs | What the viewer sees |
 |---|---|---|---|
 | 1 | `product-viewer.mp4` (first ~10s) | 10s | Both agents start. The page, the frozen plan, calls landing live. |
-| 2 | `product-xray.mp4` | 6.4s | Press **Show what the agent read**. The sweep runs, the concealed instruction ignites in place. |
+| 2 | `product-xray.mp4` | 8.0s | Press **Show what the agent read**. The camera pushes in, the sweep runs, the concealed instruction ignites in place, and the rule that stopped it is stamped at a size a phone can read. |
 | 3 | `stats-01-owasp.mp4` | 5.5s | Prompt injection is OWASP LLM01. |
 | 4 | `stats-02-echoleak.mp4` | 7.5s | It already happened: Microsoft 365 Copilot, zero click. |
 | 5 | `stats-03-defences.mp4` | 8.0s | 12 defences, over 90% bypassed, most had reported near zero. |
 | 6 | `honesty.mp4` | 8.0s | "We do not claim to stop prompt injection. Nobody has." |
-| 7 | `product-viewer.mp4` (from ~10s) | 17s | The divergence. Left: allowed, then DATA LEFT. Right: read_email HELD, send_email BLOCKED on `destination-originates-from-page`, and the user's own email still goes out. |
-| 8 | `product-arena.mp4` | 18.6s | Somebody else's injection, planted and run live. The counters move. PREVENTED. |
-| 9 | `product-proxy.mp4` | 12.2s | The integration surface: tier table, then the real refusal from two real MCP servers. |
-| 10 | `product-client.mp4` | 16.1s | Tracer inside a real MCP client. The firewall boots its tier table, the agent reads the notes and fetches the page, then the write to the page's path is **BLOCKED** on `destination-originates-from-page`, and the refusal arrives as the model's own error, provenance chain and all. |
-| 11 | `stats-04-gap.mp4` | 7.0s | 83% deploying agentic AI, 29% ready to secure it. |
-| 12 | `closing.mp4` | 8.0s | 16/16, 0, 14/16, and the link. |
+| 7 | `product-viewer.mp4` (from ~10s) | 9s | The divergence. Left: allowed, then DATA LEFT. Right: read_email HELD, send_email BLOCKED and boxed, the rule stamped underneath, and the user's own email still goes out. |
+| 8 | `product-arena.mp4` | 20.8s | Somebody else's injection, planted and run live against both agents. |
+| 9 | `product-landing.mp4` | 18.7s | One travel down the landing page: the live sandbox, the three rules, the sixteen attack classes, the two real MCP servers. |
+| 10 | `product-client.mp4` | 16.1s | Tracer inside a real MCP client. The firewall boots its tier table, the agent reads the notes and fetches the page, then the write is **BLOCKED** on `destination-originates-from-page`, and the refusal arrives as the model's own error. |
+| 11 | `product-dashboard.mp4` | 10.9s | What it looks like in front of a team: recent decisions, blocked destinations, the tier breakdown showing nothing that only reads was ever stopped. |
+| 12 | `stats-04-gap.mp4` | 7.0s | 83% deploying agentic AI, 29% ready to secure it. |
+| 13 | `closing.mp4` | 8.0s | 16/16, 0, 14/16, and the link. |
 
-That is about 124 seconds of picture. At 3:30 you have room to hold on beat 7,
+That is about 148 seconds of picture. At 3:30 there is room to hold on beat 7,
 which is the one that has to land, and on the refusal in beat 10.
 
-Beats 9 and 10 are two readings of the same claim: the proxy page states the
-integration, the client scene shows it happening in a tool the viewer
-recognises. If the cut runs long, beat 10 is the stronger of the two and can
-stand alone.
+Beats 9, 10 and 11 are three readings of the same claim, in increasing order of
+"this is real": the landing page states it, the client scene shows it happening
+in a tool the viewer recognises, the dashboard shows what it looks like at
+scale. If the cut runs long, beat 10 is the strongest and can stand alone.
 
-`product-viewer.mp4` is one 27 second take, used twice. Cut it at roughly 10
-seconds, run the cards, then come back to it. The pause reads as deliberate,
-and it stops the middle of the video becoming a wall of slides.
+`product-dashboard.mp4` carries a **PREVIEW** badge and the line saying every
+number on that page is fabricated. Both stay in frame. An assessor will look for
+exactly that, and cropping it out would be the one dishonest frame in the video.
+
+`product-viewer.mp4` is one 19 second take, used twice. Cut it at roughly 10
+seconds, run the cards, then come back to it.
 
 ---
 
 ## Beats worth holding
 
-**Beat 2, the ignite.** The X-ray sweep is about a second. Let the frame sit
-before and after it rather than cutting on the motion.
+**Beat 2, the ignite.** The X-ray sweep is about a second, and the camera is
+already moving into it. Let the frame sit before and after rather than cutting
+on the motion.
 
 **Beat 7, the block.** The protected side holds the screen for 2.6 seconds on the
 refusal by design, because that is the moment the whole project exists for. Do not
 trim it, and do not speed it up.
 
-**Beat 8, the counters.** Attempts 8 to 9 and prevented 6 to 7 happen in one
-frame. A short zoom in CapCut helps, since at phone size the change is easy to
-miss.
+**Beat 8, the arena.** The attack is submitted by a visitor and the page is
+served from `/arena/<id>`, which is worth a caption: it is someone else's
+attack, not one of ours.
 
 ---
 
@@ -98,13 +109,17 @@ The product scenes need the server running:
 
 ```
 npm run build && npm start          # :8787
-node scripts/capture-product.mjs    # all four scenes
+node scripts/capture-product.mjs    # viewer, xray, landing, dashboard, arena
 node scripts/capture-product.mjs xray
 ```
 
-Capture runs at whatever rate the protocol sustains, usually 13 to 17fps, and the
-encoder is told the measured rate so playback speed matches real time. The clips
-are build artifacts; `media/` is gitignored and the sources are committed.
+Scenes capture at 2x and output 1080p at a fixed 30fps, so the camera can push
+in without upscaling. The clips are build artifacts; `media/` is gitignored and
+the sources are committed.
+
+The extension scene is written but excluded from the default run: Chrome accepts
+`--load-extension` and then does not install the unpacked MV3 build, so it is
+captured by hand. See `docs/BRIEF-AGENT-CAPTURE.md`.
 
 The client scene renders from its cached session and needs no server:
 

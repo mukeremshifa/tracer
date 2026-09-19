@@ -111,15 +111,37 @@ re-rendered anyway.
 
 ---
 
+## Two traps that cost real time
+
+**Stale Chrome holds the debug port.** A scene that fails with a timeout, then
+fails identically on retry, is usually attaching to a leftover browser from a
+previous run rather than its own. That is how one capture ended up filming the
+Scorecard with a scrollbar on it while claiming to be the dashboard. Kill every
+Chrome before a run when anything looks wrong, and check the first frame of a
+clip is the page the scene named.
+
+**Crops must be clamped to the real frame.** `maxWidth`/`maxHeight` on a
+screencast are a bounding box Chrome fits the page into, so frames can arrive
+smaller than requested, and ffmpeg rejects a crop larger than its input. Handled
+in `compose.mjs` now, by measuring the first JPEG rather than trusting the
+request.
+
+---
+
 ## Status
 
 - [x] Camera and overlay modules, committed
-- [x] `product-xray` directed, verified at 1920x1080 / 30fps
-- [ ] Fold camera and overlay into `capture-product.mjs`
-- [ ] `product-viewer` re-shot against the new DOM
-- [ ] `product-landing` (replaces proxy)
-- [ ] `product-dashboard` (replaces arena)
-- [ ] `docs/EDIT.md` rewritten around the new cut
+- [x] Folded into `capture-product.mjs`; the standalone sample script is gone
+- [x] `product-viewer` re-shot, 19.2s
+- [x] `product-xray` directed, 8.0s
+- [x] `product-landing` (replaces proxy), 18.7s
+- [x] `product-dashboard` (replaces arena's slot), 10.9s
+- [x] `product-arena` re-shot behind the Write your own toggle, 20.8s
+- [x] `docs/EDIT.md` rewritten around the 13-beat cut
+- [x] `media/product-proxy.mp4` deleted: its page no longer exists
+
+All five verified 1920x1080 at exactly 30/1. Nothing outstanding for the
+automated scenes.
 
 Still manual, briefed in `docs/BRIEF-AGENT-CAPTURE.md`: the extension scene
 (Chrome accepts `--load-extension` and then does not install the unpacked MV3

@@ -14,51 +14,50 @@ cutting a word.
 
 ---
 
-## 1. Pick the voice
+## 1. The voice
 
-In ElevenLabs, **Voice Library**, filter to English, then audition against this
-brief: a security engineer explaining something they find genuinely alarming,
-not a product marketer. Calm, low, unhurried. No smile in the voice.
+### If you are using Val
 
-`node scripts/audition-voices.mjs` generates line 08 in five voices and prints
-the measured words per minute for each. Pace is the part that can be judged
-without listening, and it is what decides whether a line fits its shot: 140 to
-155 is documentary, past 170 is an advertising read.
-
-| Voice | Why |
-|---|---|
-| **Daniel** | Chosen. "Steady Broadcaster", British, informative. Reads line 08 at **144 wpm**. |
-| **Adam** | 169 wpm. Labelled "Dominant, Firm", tagged social_media. Closer to an ad read. |
-| **George** | 173 wpm. Warm storyteller, if Daniel feels too formal. |
-| **Eric** | 194 wpm. Too fast for this; every line would need trimming. |
-
-Avoid anything described as "upbeat", "energetic", "narration for ads", or any
-voice with noticeable vocal fry. The content is doing the persuading; the
-delivery should get out of its way.
-
-### Settings
-
-Use **Eleven Multilingual v2** (better prosody on long paragraphs than Turbo,
-and you are not latency-bound here).
+Val is "Marketing & Hook Specialist", tagged `advertisement` and `casual`,
+described as "Energetic Voice Great for ads". That is the opposite of the read
+this material wants, so the settings have to pull against the voice rather than
+go along with it:
 
 | Setting | Value | Why |
 |---|---|---|
-| Stability | **50** | Low enough to keep inflection, high enough not to wander across a 3 minute read. |
-| Similarity | **80** | Keeps the voice consistent between paragraphs you may re-generate individually. |
-| Style exaggeration | **0** | Anything above 0 pushes it towards advertising read. |
-| Speaker boost | **on** | Slight presence lift, helps it sit over music. |
-| Format | **MP3 128kbps 44.1kHz** | 192 needs a paid tier, and the difference is inaudible for one voice under music. |
+| Model | **Eleven Multilingual v2** | Not v3. v3 ignores `<break>` tags, and the script depends on them. |
+| Stability | **70 to 75** | Higher than usual. Val's default energy is the problem; stability is the dial that flattens it. Below 60 the read starts selling. |
+| Similarity | **80** | Leave it. |
+| Style exaggeration | **0** | Non-negotiable here. Any style on an ad voice makes it an ad. |
+| Speed | **0.95** if available | Slightly under natural. Energetic voices rush the ends of sentences. |
+| Speaker boost | **on** | |
+| Format | **MP3 128kbps** or better | |
 
-`scripts/make-voiceover.mjs` does the generating. It sends one request per line
-rather than one for the whole script, so a bad take can be re-rolled without
-losing the good ones, and it passes each line's neighbours plus the previous
-request ids to the API. That second part matters: without it, seventeen separate
-requests sound like seventeen separate recordings, because pitch and pace reset
-at every paragraph. With it they carry across the joins.
+**Audition on line 08 before generating the rest**: *"So we did not build another
+detector. Tracer does not claim to stop prompt injection. Nobody has."* If Val
+sounds like he is pitching that line rather than admitting it, raise stability
+to 80 and try again. If it still sells, the voice is wrong for the video and no
+setting will fix it.
 
-It then lays the lines onto one continuous track the length of the picture,
-using the cue sheet the assembler writes, so `media/tracer-voice.mp3` and
-`media/tracer-silent.mp4` both start at 0:00 and are already in sync.
+### If you want alternatives
+
+`node scripts/audition-voices.mjs` generates line 08 in five voices and prints
+the measured words per minute for each. Pace is the part that can be judged
+without listening, and it decides whether a line fits its shot: 140 to 155 is
+documentary, past 170 is an advertising read.
+
+Measured on the default library voices:
+
+| Voice | Pace | |
+|---|---|---|
+| **Daniel** | 144 wpm | Steady Broadcaster, British, informative. |
+| **Adam** | 169 wpm | Labelled "Dominant, Firm", tagged social_media. |
+| **George** | 173 wpm | Warm storyteller. |
+| **Brian** | 170 wpm | |
+| **Eric** | 194 wpm | Too fast for this. |
+
+Note that library voices need a paid plan; the key in `.env` is on the free
+tier, which is why these were auditioned but Val could not be.
 
 ---
 

@@ -110,4 +110,4 @@ Then the honesty line, which the numbers have now earned:
 > We do not claim to stop prompt injection. Nobody has. We assume the model gets fooled.
 
 And only then Tracer's own numbers, which are ours and reproducible:
-**16/16 robbed · 0 landed · 14/16 tasks still completed · 89 assertions.**
+**16/16 robbed · 0 landed · 14/16 tasks still completed · 91 assertions.**

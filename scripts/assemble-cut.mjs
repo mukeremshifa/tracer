@@ -76,11 +76,37 @@ const hhmmss = (s) => {
 
 // --- resolve the cut ---------------------------------------------------------
 
-const segments = ORDER.map((seg) => {
+// --sync recuts the picture to a voiceover that already exists, using the plan
+// scripts/sync-to-voice.mjs measures out of the recording. The lengths in ORDER
+// are written before anything is recorded and assume a pace; a real read never
+// matches them line for line. When a take exists it is the fixed thing, and the
+// picture is what gets rebuilt around it.
+const SYNC = process.argv.includes('--sync');
+const plan = SYNC ? JSON.parse(readFileSync(path.join(MEDIA, 'vo-sync.json'), 'utf8')) : null;
+if (SYNC && plan.segments.length !== ORDER.length) {
+  throw new Error(`sync plan has ${plan.segments.length} segments, the cut has ${ORDER.length}`);
+}
+
+const segments = ORDER.map((seg, i) => {
   const src = path.join(MEDIA, seg.clip + '.mp4');
   if (!existsSync(src)) throw new Error('missing clip: media/' + seg.clip + '.mp4');
   const full = duration(src);
   const from = seg.from || 0;
+
+  if (SYNC) {
+    const want = plan.segments[i];
+    if (want.clip !== seg.clip) {
+      throw new Error(`sync plan expects ${want.clip} at position ${i + 1}, the cut has ${seg.clip}`);
+    }
+    // Take as much of the source as the narration needs. Anything the source
+    // cannot cover is held on its last frame rather than slowed down, which
+    // would make a UI animation drift out of its own timing.
+    const available = full - from;
+    const to = Math.min(full, from + want.runs);
+    const hold = Math.max(0, want.runs - available);
+    return { ...seg, src, full, from, to, hold, runs: want.runs };
+  }
+
   const to = seg.to == null ? full : seg.to;
   const hold = seg.hold || 0;
   return { ...seg, src, full, from, to, hold, runs: to - from + hold };

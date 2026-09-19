@@ -73,7 +73,7 @@ html.tracer-xray [data-tracer-concealed="1"] {
 }
 
 html.tracer-xray [data-tracer-concealed="1"]::before {
-  content: 'HIDDEN FROM YOU \\2014 ' attr(data-tracer-span);
+  content: 'HIDDEN FROM YOU \\00B7 ' attr(data-tracer-span);
   display: block;
   font: 800 10px/1 'JetBrains Mono', ui-monospace, Menlo, monospace;
   letter-spacing: .22em;

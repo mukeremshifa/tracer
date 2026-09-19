@@ -210,9 +210,17 @@ function shoot(url, target, height) {
   });
 }
 
-async function render(frames) {
+async function render(frames, session) {
   const server = http.createServer((req, res) => {
     const url = req.url.split('?')[0];
+    // The page fetches the session itself, so it has to be served the scrubbed
+    // object rather than the file on disk. Reading the file here would put the
+    // capture machine's absolute paths back on screen, which is exactly what
+    // an earlier version of this did.
+    if (url.endsWith('client-session.json')) {
+      return res.writeHead(200, { 'content-type': 'application/json' })
+        .end(JSON.stringify(session));
+    }
     const file = url.startsWith('/assets/')
       ? path.join(REPO, 'web/dist', url)
       : path.join(CLIPS, url.replace(/^\/clips\//, '').replace(/^\//, ''));
@@ -262,10 +270,38 @@ if (live || !existsSync(SESSION)) {
   console.log('rendering from cached session (' + session.capturedAt + ')');
 }
 
+// The run prints absolute paths from the machine it was captured on: in the
+// prompt, in the tool calls, and inside the refusal text itself. Keep the shape
+// of the output, drop the part that is only true here.
+//
+// Scrubbed at render rather than in the cached session, so the capture stays a
+// faithful record of what the client actually did. The repo root shows up in
+// three spellings across one run: forward slashes from Node, backslashes from
+// the Windows shell, and doubled backslashes where a path has been through
+// JSON. Handling one of them leaves the other two on screen.
+{
+  const posix = REPO.replace(/\\/g, '/');
+  const win = posix.replace(/\//g, '\\');
+  const json = posix.replace(/\//g, '\\\\');
+  const scrub = (v) =>
+    typeof v === 'string'
+      ? [json, win, posix].reduce((acc, form) => acc.split(form).join('~/tracer'), v)
+      : Array.isArray(v) ? v.map(scrub)
+      : v && typeof v === 'object'
+        ? Object.fromEntries(Object.entries(v).map(([k, x]) => [k, scrub(x)]))
+        : v;
+  session = scrub(session);
+
+  // A drive letter is a single letter with a non-letter before it. Matching
+  // [A-Za-z]:[\\/] alone also fires on the "p:/" inside "http://".
+  const left = JSON.stringify(session).match(/(?<![A-Za-z])[A-Za-z]:[\\/]/g);
+  if (left) throw new Error('absolute paths still in the session: ' + [...new Set(left)].join(' '));
+}
+
 // Frame budget: the renderer types on a fixed character cadence, so the same
 // module that lays the transcript out also says how many frames it runs. One
 // source of truth, imported by both sides, so the timing cannot drift.
 const { plan } = await import(pathToFileURL(path.join(CLIPS, 'client-lines.mjs')).href);
 const frames = plan(session);
 console.log('frames:', frames, `(${(frames / FPS).toFixed(1)}s)`);
-await render(frames);
+await render(frames, session);

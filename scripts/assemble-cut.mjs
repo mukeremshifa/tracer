@@ -38,25 +38,27 @@ const FFPROBE = process.env.FFPROBE_PATH || 'ffprobe';
  */
 // `hold` freezes the segment's last frame for that many seconds.
 //
-// product-viewer carries five of the seventeen lines across two uses, 33s of
-// narration over a 19s take, and the stat cards are cut to their own animation
-// rather than to a sentence. Rather than cut words that are doing work, the
-// shots that need air get it: a still hold reads as deliberate on a UI that has
-// stopped moving anyway, and it is the same choice an editor would make on the
-// timeline. The arena and landing shots have slack and get none.
+// product-viewer carries five of the seventeen lines across two uses, and the
+// stat cards are cut to their own animation rather than to a sentence, so the
+// shots that need air get it. A still hold reads as deliberate on a UI that has
+// stopped moving anyway. The arena and landing shots have slack and get none.
+//
+// These are sized for a roughly 160 wpm read. A faster voiceover leaves the
+// holds looking like dead air: shorten them here and rebuild, rather than
+// speeding the voice up.
 const ORDER = [
-  { clip: 'product-viewer',    from: 0,  to: 10, hold: 5,   vo: ['01', '02'], note: 'the robbery' },
-  { clip: 'product-xray',                        hold: 2.5, vo: ['03', '04'], note: 'the reveal' },
-  { clip: 'stats-01-owasp',                      hold: 0.5, vo: ['05'] },
-  { clip: 'stats-02-echoleak',                   hold: 2,   vo: ['06'] },
+  { clip: 'product-viewer',    from: 0,  to: 10, hold: 3,   vo: ['01', '02'], note: 'the robbery' },
+  { clip: 'product-xray',                        hold: 1.5, vo: ['03', '04'], note: 'the reveal' },
+  { clip: 'stats-01-owasp',                                 vo: ['05'] },
+  { clip: 'stats-02-echoleak',                   hold: 1,   vo: ['06'] },
   { clip: 'stats-03-defences',                              vo: ['07'] },
   { clip: 'honesty',                                        vo: ['08'], note: 'hold, no music' },
-  { clip: 'product-viewer',    from: 10,         hold: 10,  vo: ['09', '10', '11'], note: 'the divergence' },
+  { clip: 'product-viewer',    from: 10,         hold: 6,   vo: ['09', '10', '11'], note: 'the divergence' },
   { clip: 'product-arena',                                  vo: ['12'] },
   { clip: 'product-landing',                                vo: ['13'] },
   { clip: 'product-client',                                 vo: ['14'], note: 'the strongest beat' },
   { clip: 'product-dashboard',                              vo: ['15'] },
-  { clip: 'stats-04-gap',                        hold: 1.8, vo: ['16'] },
+  { clip: 'stats-04-gap',                        hold: 1,   vo: ['16'] },
   { clip: 'closing',                             hold: 1,   vo: ['17'], note: 'last 2s silent' },
 ];
 

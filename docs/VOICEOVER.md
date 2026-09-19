@@ -91,14 +91,15 @@ model speed up or add artefacts, so the script uses them nowhere by default.
 
 **03** `over product-xray, before the reveal`
 
-> Here is the page it was reading.
+> This is the page it was reading. Tracer already knows there is something
+> on it you cannot see.
 
 ---
 
 **04** `over product-xray, after the ignite. Let the payload land first.`
 
 > An instruction, hidden in white text on a white background. The agent read
-> it as though you had typed it.
+> it as though you had typed it yourself.
 
 ---
 
@@ -117,8 +118,8 @@ model speed up or add artefacts, so the script uses them nowhere by default.
 
 **07** `over stats-03-defences`
 
-> So people built detectors. Twelve were tested. Over ninety percent of
-> attacks got through.
+> So people built detectors. Twelve were tested against adaptive attacks.
+> Over ninety percent of those attacks got through.
 
 ---
 
@@ -138,7 +139,7 @@ model speed up or add artefacts, so the script uses them nowhere by default.
 **10** `over product-viewer, hold on the block`
 
 > But the address it is sending to appears nowhere in what you asked for...
-> and it does appear in the page.
+> and it does appear in the page it just read.
 
 ---
 
@@ -159,16 +160,15 @@ model speed up or add artefacts, so the script uses them nowhere by default.
 **13** `over product-landing`
 
 > Sixteen classes of concealment, every one of them measured. Three rules,
-> none of which ask the model to be right about anything. It assumes the
-> model gets fooled, and makes the attack fail anyway.
+> and none of them ask the model to be right about anything.
 
 ---
 
 **14** `over product-client. This is the beat that answers "is this only a demo?"`
 
-> And this is not a sandbox. Tracer inside a real client, in front of two
-> real servers. The agent follows the page's instruction, and the refusal
-> arrives as the model's own error.
+> This is not a sandbox. Tracer inside a real client, in front of two real
+> servers. The agent follows the page's instruction, and the refusal comes
+> back as the model's own error, with the whole provenance chain attached.
 
 ---
 

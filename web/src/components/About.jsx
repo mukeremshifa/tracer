@@ -17,7 +17,7 @@ export function About({ meta }) {
         <div className="panel-body stack">
           <p className="lede" style={{ margin: 0 }}>
             An AI agent that browses the web reads untrusted content and then acts. Anyone who can get text
-            onto a page the agent reads &mdash; invisible text, an HTML comment, a product review &mdash; can
+            onto a page the agent reads, whether invisible text, an HTML comment or a product review, can
             issue instructions the agent follows as if the user had typed them. The agent has the user&rsquo;s
             credentials and the user&rsquo;s trust. The attacker needs neither.
           </p>
@@ -29,7 +29,7 @@ export function About({ meta }) {
           </p>
           <p className="lede" style={{ margin: 0 }}>
             So Tracer takes the opposite position. <b>We assume the injection succeeds at fooling the model.
-            We make it fail at producing an effect &mdash; and we make it visible to the human.</b>
+            We make it fail at producing an effect, and we make it visible to the human.</b>
           </p>
           <div className="notice">
             We do not claim to stop prompt injection. Nobody has. What we claim is the sentence at the top of
@@ -44,20 +44,20 @@ export function About({ meta }) {
         </div>
         <div className="panel-body stack">
           <div>
-            <b>Layer A &mdash; declared provenance.</b>
+            <b>Layer A: declared provenance.</b>
             <p className="lede" style={{ margin: '6px 0 0' }}>
               Every tool that reads private data or acts externally must declare{' '}
               <span className="mono">derived_from</span>: the span IDs whose content informed its arguments.
-              This is cheap and it produces good explanations. It is also bypassable &mdash; a sufficiently
-              clever injection can instruct the model to lie &mdash; so it is never load-bearing on its own.
+              This is cheap and it produces good explanations. It is also bypassable, because a sufficiently
+              clever injection can instruct the model to lie, so it is never load-bearing on its own.
               When Layer A and Layer B disagree, the interface says so.
             </p>
           </div>
           <div>
-            <b>Layer B &mdash; enforced overlap.</b>
+            <b>Layer B: enforced overlap.</b>
             <p className="lede" style={{ margin: '6px 0 0' }}>
               Independently of what the model declares, our code scans tool arguments for overlap with
-              untrusted content &mdash; after normalising that content, so encoding the payload does not hide
+              untrusted content, after normalising that content, so encoding the payload does not hide
               it. An injection cannot talk its way past code it never sees.
             </p>
           </div>
@@ -70,8 +70,8 @@ export function About({ meta }) {
         </div>
         <div className="panel-body stack">
           <div className="claim" style={{ borderLeftColor: 'var(--bone-30)', color: 'var(--bone-60)' }}>
-            A tier-2 call is hard-blocked when the destination of the call &mdash; recipient address, URL host,
-            file path &mdash; does <b>not</b> appear in the user&rsquo;s original instruction, <b>and</b> does
+            A tier-2 call is hard-blocked when the destination of the call, whether recipient address, URL host
+            or file path, does <b>not</b> appear in the user&rsquo;s original instruction, <b>and</b> does
             appear in untrusted page content.
           </div>
           <p className="lede" style={{ margin: 0 }}>
@@ -128,7 +128,7 @@ export function About({ meta }) {
           </p>
           <p className="lede" style={{ margin: 0 }}>
             This is not a shortcut around a headless browser. In a real browser agent, the agent <i>is</i> the
-            browser. It also means there is no Playwright image, no container, and no cold start &mdash; and
+            browser. It also means there is no Playwright image, no container, and no cold start, and
             the sandbox can analyse a stranger&rsquo;s page instantly, in their own browser.
           </p>
           <p className="lede" style={{ margin: 0 }}>
@@ -175,7 +175,7 @@ export function About({ meta }) {
             The default model provider is deterministic and is <b>not</b> a language model: it reproduces one
             behaviour, treating page text as an instruction. That keeps the public sandbox free to run and the
             scorecard reproducible without a key. Tracer&rsquo;s defence inspects tool calls and provenance and
-            never model internals, so the policy engine is identical behind a live model &mdash; set{' '}
+            never model internals, so the policy engine is identical behind a live model. Set{' '}
             <span className="mono">MODEL_PROVIDER=openai</span> or <span className="mono">vertex</span> and the
             same loop runs against one.
           </div>
@@ -188,25 +188,25 @@ export function About({ meta }) {
         </div>
         <div className="panel-body stack small">
           <a href="https://www.csoonline.com/article/4184455/prompt-injection-breaks-todays-ai-agents-study-warns.html" target="_blank" rel="noreferrer">
-            CSO Online &mdash; Prompt injection breaks today&rsquo;s AI agents
+            CSO Online. Prompt injection breaks today&rsquo;s AI agents
           </a>
           <a href="https://www.sysdig.com/learn-cloud-native/prompt-injection" target="_blank" rel="noreferrer">
-            Sysdig &mdash; Comprehensive guide to prompt injection attacks in 2026
+            Sysdig. Comprehensive guide to prompt injection attacks in 2026
           </a>
           <a href="https://labs.cloudsecurityalliance.org/research/csa-research-note-indirect-prompt-injection-in-the-wild-2026/" target="_blank" rel="noreferrer">
-            Cloud Security Alliance &mdash; Indirect prompt injection in the wild (2026)
+            Cloud Security Alliance. Indirect prompt injection in the wild (2026)
           </a>
           <a href="https://arxiv.org/pdf/2511.19477" target="_blank" rel="noreferrer">
-            arXiv 2511.19477 &mdash; Building browser agents (the Comet demonstration)
+            arXiv 2511.19477. Building browser agents (the Comet demonstration)
           </a>
           <a href="https://arxiv.org/pdf/2605.14290" target="_blank" rel="noreferrer">
-            arXiv 2605.14290 &mdash; Web agents should adopt the plan-then-execute paradigm
+            arXiv 2605.14290. Web agents should adopt the plan-then-execute paradigm
           </a>
           <a href="https://arxiv.org/pdf/2511.20597" target="_blank" rel="noreferrer">
-            arXiv 2511.20597 &mdash; BrowseSafe
+            arXiv 2511.20597. BrowseSafe
           </a>
           <a href="https://arxiv.org/pdf/2512.12594" target="_blank" rel="noreferrer">
-            arXiv 2512.12594 &mdash; ceLLMate, sandboxing browser AI agents
+            arXiv 2512.12594. ceLLMate, sandboxing browser AI agents
           </a>
         </div>
       </div>

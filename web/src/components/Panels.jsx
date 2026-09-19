@@ -42,7 +42,7 @@ export function PlanPanel({ plan, calls }) {
             <span className="plan-n">!</span>
             <div className="grow">
               <div className="plan-tool" style={{ color: 'var(--acid)' }}>
-                {c.name}() &mdash; not on the plan
+                {c.name}() is not on the plan
               </div>
               <div className="plan-why">
                 Appeared only after untrusted content entered the context.
@@ -180,7 +180,7 @@ export function DecisionCard({ call, onTrace, tracedSpan, protectedMode }) {
         {chain.length > 0 && (
           <div className="chain">
             <div className="label" style={{ marginBottom: 9 }}>
-              Provenance &mdash; where this came from
+              Provenance: where this came from
             </div>
             {chain.map((c) => (
               <div className="chain-item" key={c.spanId}>
@@ -267,7 +267,7 @@ export function Verdict({ outcome, answer, protectedMode }) {
               <div className="stack" style={{ marginTop: 12 }}>
                 {answer.findings.map((f, i) => (
                   <div className="notice" key={i}>
-                    <b>{f.channel}</b> &mdash; {f.reason}
+                    <b>{f.channel}</b>: {f.reason}
                     {protectedMode ? ' The URL was redacted before display, so no request was made.' : ' This request fires when the answer is rendered.'}
                     <div className="mono tiny" style={{ marginTop: 6, wordBreak: 'break-all' }}>
                       {f.url}

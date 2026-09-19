@@ -101,7 +101,7 @@ export function Evidence({ evidence }) {
         Upstream servers: <span className="mono">{evidence.servers && evidence.servers.fetch}</span> and{' '}
         <span className="mono">{evidence.servers && evidence.servers.filesystem}</span>, spawned over stdio.
         Reproduce with <span className="mono">npx @mukeremshifa/tracer prove --both</span>. The model is
-        scripted so the run needs no API key and reproduces byte for byte &mdash; it stands in for the
+        scripted so the run needs no API key and reproduces byte for byte. It stands in for the
         compromised agent, not for the defence.
       </div>
     </div>

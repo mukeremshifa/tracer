@@ -395,7 +395,7 @@ export function Sandbox({ meta, go, initialAttack }) {
         <h1 className="title viewer-title">Watch the same agent get robbed, then not.</h1>
         <p className="lede" style={{ maxWidth: '68ch' }}>
           The page on the left carries an instruction the user cannot see. Both runs use the same model
-          on the same page &mdash; only what their tool calls are allowed to do is different.
+          on the same page. Only what their tool calls are allowed to do is different.
         </p>
       </div>
 
@@ -483,7 +483,7 @@ export function Sandbox({ meta, go, initialAttack }) {
       {!ready && (
         <div className="row small faint">
           <span className="spinner" />
-          analysing {progress.total} pages in a sandboxed iframe &mdash; {progress.done} done
+          analysing {progress.total} pages in a sandboxed iframe, {progress.done} done
         </div>
       )}
 
@@ -584,7 +584,7 @@ export function Sandbox({ meta, go, initialAttack }) {
           {framePage !== activePath && (
             <div className="notice small">
               Now showing <span className="mono">{framePage}</span>. The instruction was not on the page
-              the user chose &mdash; the agent was sent here by that page.{' '}
+              the user chose. The agent was sent here by that page.{' '}
               <button className="btn sm ghost" onClick={() => setFramePage(activePath)}>
                 back to {activePath}
               </button>
@@ -784,7 +784,7 @@ export function Sandbox({ meta, go, initialAttack }) {
 
             {!board.entries.filter((e) => e.bypassed).length ? (
               <div className="empty">
-                Nothing here yet. That is not a claim that nothing can get through &mdash; it is a claim
+                Nothing here yet. That is not a claim that nothing can get through. It is a claim
                 that nobody has yet.
               </div>
             ) : (

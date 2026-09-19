@@ -1,5 +1,5 @@
 // ---------------------------------------------------------------------------
-// The dashboard — a preview, and labelled as one.
+// The dashboard: a preview, and labelled as one.
 //
 // Tracer today is a firewall you run in front of one agent. This is what it
 // looks like run in front of a fleet: the decisions it is already taking,
@@ -67,7 +67,7 @@ export function Dashboard({ go }) {
         </div>
         <p className="lede" style={{ maxWidth: '64ch', marginTop: 18 }}>
           What Tracer looks like in front of a team rather than one agent. Every number on this page is
-          fabricated &mdash; it is a design for a console that does not ship yet. The measured results
+          fabricated. It is a design for a console that does not ship yet. The measured results
           are on the{' '}
           {go ? (
             <button
@@ -195,7 +195,7 @@ export function Dashboard({ go }) {
               </table>
             </div>
             <div className="small faint" style={{ marginTop: 16 }}>
-              Every refusal happened at tier 2. Nothing that only reads was ever stopped &mdash; a
+              Every refusal happened at tier 2. Nothing that only reads was ever stopped, a
               firewall that blocks reads is an off switch.
             </div>
           </div>

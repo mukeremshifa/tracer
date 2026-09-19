@@ -31,7 +31,7 @@ const BEATS = [
   {
     n: '02',
     title: 'Trace every argument',
-    body: 'Every value in every tool call is traced back to the span of the page it came from — including spans a person could never have seen.',
+    body: 'Every value in every tool call is traced back to the span of the page it came from, including spans a person could never have seen.',
   },
   {
     n: '03',
@@ -75,7 +75,7 @@ function Hero({ go }) {
         <span className="dim">Then it emailed your code to a stranger.</span>
       </h1>
       <p className="lede-sub">
-        Tracer stops the email. <b>Not the instruction — the email.</b> It assumes the model was fooled,
+        Tracer stops the email. <b>Not the instruction. The email.</b> It assumes the model was fooled,
         and makes the theft fail anyway.
       </p>
       <div className="lede-actions">
@@ -230,7 +230,7 @@ function Proof({ scorecard, go }) {
       </div>
 
       <p className="band-lede" style={{ marginTop: 26 }}>
-        Scored under the harder of two scenarios — the one where the user genuinely asked for an email,
+        Scored under the harder of two scenarios, the one where the user genuinely asked for an email,
         so refusing to send anything would be cheating. The last number is 14 rather than 16 because two
         runs were held for a human to approve instead of being refused outright.{' '}
         <button className="btn sm ghost" onClick={() => go('scorecard')}>
@@ -373,7 +373,7 @@ const PANES = {
     say: (
       <>
         <b>The only host where the whole thesis survives.</b> The analyser runs where the page renders,
-        so it has real computed styles and real layout — which is what makes the X-ray above possible at
+        so it has real computed styles and real layout, which is what makes the X-ray above possible at
         all. Your agent asks before it acts.
       </>
     ),
@@ -456,7 +456,7 @@ function Ceiling({ go }) {
           <div className="caveat-n">02</div>
           <h3 className="caveat-title">The overlap scan is verbatim-based.</h3>
           <p className="caveat-body">
-            Encoding a payload does not hide it — zero-width strips, base64 decodes. A payload the model
+            Encoding a payload does not hide it: zero-width strips, base64 decodes. A payload the model
             paraphrases rather than copies will not overlap.
           </p>
         </div>

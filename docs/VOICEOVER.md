@@ -45,9 +45,16 @@ and you are not latency-bound here).
 | Speaker boost | **on** | Slight presence lift, helps it sit over music. |
 | Format | **MP3 192kbps 44.1kHz** or WAV | Either is fine for CapCut. |
 
-Generate **one paragraph at a time**, not the whole script in one request. Two
-reasons: you can re-roll a single bad line without losing a good take of the
-rest, and the numbered files drop straight onto the timeline in order.
+`scripts/make-voiceover.mjs` does the generating. It sends one request per line
+rather than one for the whole script, so a bad take can be re-rolled without
+losing the good ones, and it passes each line's neighbours plus the previous
+request ids to the API. That second part matters: without it, seventeen separate
+requests sound like seventeen separate recordings, because pitch and pace reset
+at every paragraph. With it they carry across the joins.
+
+It then lays the lines onto one continuous track the length of the picture,
+using the cue sheet the assembler writes, so `media/tracer-voice.mp3` and
+`media/tracer-silent.mp4` both start at 0:00 and are already in sync.
 
 ---
 
@@ -57,7 +64,10 @@ Paste each numbered block separately. **Do not paste the headings or the
 bracketed notes**, they are for you, not the model.
 
 The `...` marks are deliberate. ElevenLabs reads them as a short breath, which
-is what stops the numbers running together.
+is what stops the numbers running together. Multilingual v2 also honours
+`<break time="1.0s" />` for a timed pause, which is worth reaching for only when
+an ellipsis is not enough: the docs warn that overusing break tags makes the
+model speed up or add artefacts, so the script uses them nowhere by default.
 
 ---
 
@@ -194,24 +204,29 @@ Do not narrate over these. They are the shots that have to land on their own.
 
 ## 4. CapCut assembly
 
-1. Drop the clips in the order in `docs/EDIT.md`. All are 1920x1080, 30fps,
-   already silent, so no audio detaching is needed.
-2. Drop the numbered voice files on a track above. They are already in order.
-3. **Cut picture to voice, not the other way round.** If a line runs long,
-   extend the clip by holding on a still section rather than speeding the voice
-   up. If a line runs short, let the picture breathe.
-4. `product-viewer.mp4` is one 19 second take used **twice**: cut it at about
-   10 seconds for lines 01 and 02, run the cards, then return to it for lines
-   09 to 11.
-5. Captions: burn in the citation lines on the stat cards. They are legible at
-   1080p but tight on a phone.
+Two files, both starting at 0:00:
+
+```
+media/tracer-silent.mp4    2:24.5, no audio track
+media/tracer-voice.mp3     2:24.5, the lines already at their cues
+```
+
+1. Drop both at 0:00. They are the same length and already aligned, so there is
+   nothing to nudge.
+2. Add music on a third track. Everything below is on top of that.
+3. Captions. **Do not let auto-captioning transcribe the voice**: it will mangle
+   `destination-originates-from-page` and `verify@sec-update.tld`. Type those.
+
+If a line wants moving, move it in CapCut rather than re-generating. The
+individual takes are in `media/vo/` as `vo-01.mp3` and so on if you would rather
+place them by hand.
 
 ### Music
 
 Something with no melodic hook, sitting at **-24 to -20 LUFS** under the voice.
-Duck it by 6dB under every line. Bring it up in the two silent beats above,
-which is where music earns its place. Cut it entirely for the honesty line
-(08), which lands harder dry.
+Duck it by 6dB under every line. Bring it up in the silent beats in section 3,
+which is where music earns its place. Cut it entirely under the honesty line
+(08, at 0:39), which lands harder dry.
 
 ---
 

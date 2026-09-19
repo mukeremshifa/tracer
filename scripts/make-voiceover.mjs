@@ -19,11 +19,14 @@ import { readFileSync, writeFileSync, mkdirSync, existsSync, readdirSync } from 
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { createHash } from 'node:crypto';
+import { spawnSync } from 'node:child_process';
 
 const REPO = path.resolve(fileURLToPath(new URL('..', import.meta.url)));
 const SCRIPT = path.join(REPO, 'docs/VOICEOVER.md');
 const OUT = path.join(REPO, 'media/vo');
 const API = 'https://api.elevenlabs.io/v1';
+const FFMPEG = process.env.FFMPEG_PATH || 'ffmpeg';
+const FFPROBE = process.env.FFPROBE_PATH || 'ffprobe';
 
 // --- key ---------------------------------------------------------------------
 
@@ -54,7 +57,10 @@ const SETTINGS = {
   style: 0,
   use_speaker_boost: true,
 };
+// Multilingual v2 rather than v3: it honours <break time="x.xs" /> for the
+// timed pauses the script needs, which v3 dropped in favour of audio tags.
 const MODEL = 'eleven_multilingual_v2';
+const FORMAT = 'mp3_44100_192';
 
 // --- parse the script --------------------------------------------------------
 
@@ -99,14 +105,34 @@ async function listVoices(key) {
   }
 }
 
-async function speak(key, voice, text, out) {
-  const r = await fetch(`${API}/text-to-speech/${voice}`, {
+/**
+ * Speak one line.
+ *
+ * `prev` and `next` are the neighbouring lines' text, and `prevIds` the request
+ * ids of what came before. Both are what stop seventeen separate requests
+ * sounding like seventeen separate recordings: the model is told what it just
+ * said and what it is about to say, so pitch and pace carry across the joins
+ * instead of resetting at every paragraph.
+ *
+ * Returns the request id, to be fed forward into the next call.
+ */
+async function speak(key, voice, text, out, { prev, next, prevIds = [] } = {}) {
+  const r = await fetch(`${API}/text-to-speech/${voice}?output_format=${FORMAT}`, {
     method: 'POST',
     headers: { 'xi-api-key': key, 'content-type': 'application/json', accept: 'audio/mpeg' },
-    body: JSON.stringify({ text, model_id: MODEL, voice_settings: SETTINGS }),
+    body: JSON.stringify({
+      text,
+      model_id: MODEL,
+      voice_settings: SETTINGS,
+      ...(prev ? { previous_text: prev } : {}),
+      ...(next ? { next_text: next } : {}),
+      // At most three, per the API.
+      ...(prevIds.length ? { previous_request_ids: prevIds.slice(-3) } : {}),
+    }),
   });
   if (!r.ok) throw new Error(`tts: ${r.status} ${await r.text()}`);
   writeFileSync(out, Buffer.from(await r.arrayBuffer()));
+  return r.headers.get('request-id') || null;
 }
 
 // --- run ---------------------------------------------------------------------
@@ -135,21 +161,81 @@ const stampFile = path.join(OUT, '.hashes.json');
 const stamps = existsSync(stampFile) ? JSON.parse(readFileSync(stampFile, 'utf8')) : {};
 
 let made = 0, kept = 0;
-for (const l of lines) {
+const ids = [];
+for (let i = 0; i < lines.length; i++) {
+  const l = lines[i];
   const out = path.join(OUT, `vo-${l.id}.mp3`);
-  const hash = createHash('sha1').update(voice + '\n' + l.text).digest('hex').slice(0, 12);
-  if (!force && existsSync(out) && stamps[l.id] === hash) {
+  // The hash covers the neighbours too: changing line 9 changes how line 10 is
+  // spoken, because 10 was generated knowing what 9 said.
+  const prev = lines[i - 1] ? lines[i - 1].text : '';
+  const next = lines[i + 1] ? lines[i + 1].text : '';
+  const hash = createHash('sha1')
+    .update([voice, MODEL, prev, l.text, next].join('\n')).digest('hex').slice(0, 12);
+
+  if (!force && existsSync(out) && stamps[l.id]?.hash === hash) {
     kept += 1;
+    if (stamps[l.id].id) ids.push(stamps[l.id].id);
     continue;
   }
-  process.stdout.write(`${l.id}  ${l.text.slice(0, 64)}${l.text.length > 64 ? '...' : ''}`);
-  await speak(key, voice, l.text, out);
-  stamps[l.id] = hash;
+  process.stdout.write(`${l.id}  ${l.text.slice(0, 62)}${l.text.length > 62 ? '...' : ''}`);
+  const id = await speak(key, voice, l.text, out, { prev, next, prevIds: ids });
+  if (id) ids.push(id);
+  stamps[l.id] = { hash, id };
   made += 1;
-  console.log('  -> media/vo/vo-' + l.id + '.mp3');
+  console.log('  -> vo-' + l.id + '.mp3');
 }
 writeFileSync(stampFile, JSON.stringify(stamps, null, 2));
 
 const words = lines.reduce((n, l) => n + l.text.split(/\s+/).length, 0);
 console.log(`\n${made} generated, ${kept} unchanged.`);
 console.log(`${words} words total, roughly ${Math.round(words / 150 * 60)}s at a documentary pace.`);
+
+// --- lay the lines onto the cut's timeline -----------------------------------
+
+// One continuous track the length of the picture, with each line starting at the
+// second it is meant to. Dropped into CapCut at 0:00 against
+// media/tracer-silent.mp4, it is already in sync, so the edit is music and
+// captions rather than nudging seventeen clips into place.
+if (!has('--no-track') && !only) {
+  const cues = JSON.parse(readFileSync(path.join(REPO, 'media/vo-cues.json'), 'utf8'));
+  const dur = (f) => {
+    const r = spawnSync(FFPROBE, ['-v', 'error', '-show_entries', 'format=duration',
+      '-of', 'csv=p=0', f], { encoding: 'utf8' });
+    return parseFloat(r.stdout.trim()) || 0;
+  };
+
+  const inputs = [];
+  const filters = [];
+  let n = 0;
+  let overrun = false;
+  for (const l of lines) {
+    const f = path.join(OUT, `vo-${l.id}.mp3`);
+    if (!existsSync(f)) continue;
+    const cue = cues.lines[l.id];
+    if (!cue) { console.log(`  no cue for line ${l.id}, skipped`); continue; }
+    const ms = Math.round(cue.at * 1000);
+    inputs.push('-i', f);
+    filters.push(`[${n}:a]adelay=${ms}|${ms}[a${n}]`);
+    const ends = cue.at + dur(f);
+    if (ends > cue.until + 0.35) {
+      console.log(`  line ${l.id} runs ${(ends - cue.until).toFixed(1)}s past its shot`);
+      overrun = true;
+    }
+    n += 1;
+  }
+
+  if (n) {
+    const track = path.join(REPO, 'media/tracer-voice.mp3');
+    const graph = filters.join(';') +
+      `;${filters.map((_, i) => `[a${i}]`).join('')}amix=inputs=${n}:normalize=0,` +
+      `apad=whole_dur=${cues.total}[out]`;
+    const r = spawnSync(FFMPEG, ['-y', ...inputs, '-filter_complex', graph,
+      '-map', '[out]', '-c:a', 'libmp3lame', '-b:a', '192k', track], { encoding: 'utf8' });
+    if (r.status !== 0) {
+      console.log('\ntrack assembly failed:\n' + (r.stderr || '').split('\n').slice(-10).join('\n'));
+    } else {
+      console.log(`\n-> media/tracer-voice.mp3  (${cues.total}s, aligned to tracer-silent.mp4)`);
+      if (overrun) console.log('   Some lines run past their shot. Trim the words, or hold the picture.');
+    }
+  }
+}

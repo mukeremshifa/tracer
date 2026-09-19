@@ -100,6 +100,28 @@ for (const s of timed) {
 console.log('  ' + '-'.repeat(68));
 console.log('  ' + hhmmss(total).padEnd(8) + 'total\n');
 
+// Where each voiceover line starts, and the shot it has to finish inside.
+//
+// Written out so make-voiceover.mjs can lay the spoken lines onto one track the
+// length of the picture, instead of the timings living in two places and
+// drifting apart the first time a clip is re-captured.
+//
+// Lines sharing a segment split it: two lines over a ten second shot get five
+// seconds each. That is a starting point for the edit, not a claim about where
+// the words land.
+const cues = { total: Number(total.toFixed(3)), lines: {} };
+for (const s of timed) {
+  const each = s.runs / s.vo.length;
+  s.vo.forEach((v, i) => {
+    cues.lines[v] = {
+      at: Number((s.at + each * i).toFixed(3)),
+      until: Number((s.at + each * (i + 1)).toFixed(3)),
+      clip: s.clip,
+    };
+  });
+}
+writeFileSync(path.join(MEDIA, 'vo-cues.json'), JSON.stringify(cues, null, 2));
+
 if (process.argv.includes('--timing')) process.exit(0);
 
 // --- build -------------------------------------------------------------------

@@ -44,13 +44,13 @@ deck of statistics is a case study, and this is a product.
 | 6 | `honesty.mp4` | 8.0s | "We do not claim to stop prompt injection. Nobody has." |
 | 7 | `product-viewer.mp4` (from ~10s) | 9s | The divergence. Left: allowed, then DATA LEFT. Right: read_email HELD, send_email BLOCKED and boxed, the rule stamped underneath, and the user's own email still goes out. |
 | 8 | `product-arena.mp4` | 20.8s | Somebody else's injection, planted and run live against both agents. |
-| 9 | `product-landing.mp4` | 18.7s | One travel down the landing page: the live sandbox, the three rules, the sixteen attack classes, the two real MCP servers. |
+| 9 | `product-landing.mp4` | 23.7s | One travel down the landing page: the live sandbox, the three rules, the sixteen attack classes, the two real MCP servers. |
 | 10 | `product-client.mp4` | 16.1s | Tracer inside a real MCP client. The firewall boots its tier table, the agent reads the notes and fetches the page, then the write is **BLOCKED** on `destination-originates-from-page`, and the refusal arrives as the model's own error. |
-| 11 | `product-dashboard.mp4` | 10.9s | What it looks like in front of a team: recent decisions, blocked destinations, the tier breakdown showing nothing that only reads was ever stopped. |
+| 11 | `product-dashboard.mp4` | 12.6s | What it looks like in front of a team: recent decisions, blocked destinations, the tier breakdown showing nothing that only reads was ever stopped. |
 | 12 | `stats-04-gap.mp4` | 7.0s | 83% deploying agentic AI, 29% ready to secure it. |
 | 13 | `closing.mp4` | 8.0s | 16/16, 0, 14/16, and the link. |
 
-That is about 148 seconds of picture. At 3:30 there is room to hold on beat 7,
+That is about 155 seconds of picture. At 3:30 there is room to hold on beat 7,
 which is the one that has to land, and on the refusal in beat 10.
 
 Beats 9, 10 and 11 are three readings of the same claim, in increasing order of
